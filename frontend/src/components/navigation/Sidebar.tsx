@@ -3,9 +3,14 @@ import { NavLink } from "react-router-dom";
 const links = [
   { to: "/app/dashboard", label: "Dashboard", icon: "📊" },
   { to: "/app/transactions", label: "Transações", icon: "💳" },
+  { to: "/app/credit-cards", label: "Cartões", icon: "💳" },
+  { to: "/app/recurrences", label: "Recorrências", icon: "🔁" },
   { to: "/app/imports", label: "Importações", icon: "🏦" },
-  { to: "/app/goals", label: "Metas", icon: "🎯" },
+  { to: "/app/budgets", label: "Orçamentos", icon: "🎯" },
+  { to: "/app/goals", label: "Metas", icon: "🏆" },
   { to: "/app/debts", label: "Dívidas", icon: "🤝" },
+  { to: "/app/clients", label: "Clientes", icon: "🧑‍💼" },
+  { to: "/app/reports", label: "Relatórios", icon: "📄" },
   { to: "/app/partnership", label: "Parceiro", icon: "❤️" },
   { to: "/app/profile", label: "Perfil", icon: "⚙️" },
 ];

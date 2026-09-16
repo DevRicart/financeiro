@@ -20,7 +20,19 @@ class Debt(models.Model):
         related_name="debts",
     )
 
-    person_name = models.CharField(max_length=150)
+    client = models.ForeignKey(
+        "transactions.Client",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="debts",
+        help_text="Opcional — alternativa a digitar person_name livremente.",
+    )
+    person_name = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Preenchido automaticamente quando `client` é usado.",
+    )
     reason = models.CharField(max_length=255)
     direction = models.CharField(max_length=20, choices=Direction.choices)
 
@@ -35,9 +47,19 @@ class Debt(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(client__isnull=False) | ~models.Q(person_name=""),
+                name="debt_requires_client_or_person_name",
+            )
+        ]
 
     def __str__(self):
-        return f"{self.person_name} - {self.reason}"
+        return f"{self.display_name} - {self.reason}"
+
+    @property
+    def display_name(self):
+        return self.client.display_name if self.client_id else self.person_name
 
     @property
     def paid_amount(self):

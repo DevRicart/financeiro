@@ -1,5 +1,13 @@
 import { api, type Paginated } from "./api";
-import type { FinancialAccount, PaymentMethod, Transaction, TransactionType } from "../types/transaction";
+import type {
+  FinancialAccount,
+  FreelanceDetail,
+  PaymentMethod,
+  SalaryDetail,
+  ServiceIncomeDetail,
+  Transaction,
+  TransactionType,
+} from "../types/transaction";
 
 export interface TransactionFilters {
   transaction_type?: TransactionType;
@@ -20,6 +28,10 @@ export interface TransactionPayload {
   due_date?: string | null;
   is_shared?: boolean;
   income_type?: string | null;
+  credit_card?: number;
+  salary_detail?: SalaryDetail;
+  service_detail?: Omit<ServiceIncomeDetail, "client_name">;
+  freelance_detail?: Omit<FreelanceDetail, "client_name">;
 }
 
 export const transactionsService = {

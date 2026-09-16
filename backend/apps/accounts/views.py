@@ -74,6 +74,29 @@ class ChangePasswordView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class DeleteAccountView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        password = request.data.get("password", "")
+        if not request.user.check_password(password):
+            return Response({"detail": "Senha incorreta."}, status=status.HTTP_400_BAD_REQUEST)
+
+        from apps.transactions.models import RecurrenceRule, Transaction
+
+        user = request.user
+        # Deleted in this order, ahead of the final user.delete() cascade:
+        # Transaction.category and RecurrenceRule.category are PROTECT (so a
+        # category in use can't be casually deleted via its own endpoint),
+        # but Django's on_delete=PROTECT raises the instant *any* row
+        # references the target — even one that's about to be deleted in
+        # this very same cascade — so we clear the referencing rows first.
+        RecurrenceRule.objects.filter(owner=user).delete()
+        Transaction.objects.filter(owner=user).delete()
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

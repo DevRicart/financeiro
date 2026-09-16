@@ -8,7 +8,8 @@ export const debtsService = {
   },
 
   async create(payload: {
-    person_name: string;
+    client?: number;
+    person_name?: string;
     reason: string;
     direction: "RECEIVABLE" | "PAYABLE";
     total_amount: string;

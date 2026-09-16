@@ -37,4 +37,9 @@ export const authService = {
       tokenStorage.clear();
     }
   },
+
+  async deleteAccount(password: string) {
+    await api.post("/auth/delete-account/", { password });
+    tokenStorage.clear();
+  },
 };

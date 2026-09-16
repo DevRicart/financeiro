@@ -6,6 +6,10 @@ from . import views
 router = DefaultRouter()
 router.register("transactions", views.TransactionViewSet, basename="transaction")
 router.register("financial-accounts", views.FinancialAccountViewSet, basename="financial-account")
+router.register("clients", views.ClientViewSet, basename="client")
+router.register("credit-cards", views.CreditCardViewSet, basename="credit-card")
+router.register("installment-plans", views.InstallmentPlanViewSet, basename="installment-plan")
+router.register("recurrences", views.RecurrenceRuleViewSet, basename="recurrence")
 
 urlpatterns = [
     path(

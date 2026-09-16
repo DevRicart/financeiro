@@ -9,7 +9,10 @@ export interface DebtPayment {
 
 export interface Debt {
   id: number;
+  client: number | null;
+  client_name?: string;
   person_name: string;
+  display_name: string;
   reason: string;
   direction: "RECEIVABLE" | "PAYABLE";
   total_amount: string;

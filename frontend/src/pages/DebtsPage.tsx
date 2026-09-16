@@ -11,6 +11,7 @@ import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { Modal } from "../components/ui/Modal";
 import { Select } from "../components/ui/Select";
 import { debtSchema, type DebtFormData } from "../schemas/debt.schema";
+import { clientsService } from "../services/clients.service";
 import { debtsService } from "../services/debts.service";
 import type { Debt } from "../types/debt";
 import { formatCurrency } from "../utils/currency";
@@ -28,29 +29,47 @@ const STATUS_LABEL: Record<Debt["status"], string> = {
 export function DebtsPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setModalOpen] = useState(false);
+  const [nameMode, setNameMode] = useState<"client" | "custom">("custom");
   const [payingDebtId, setPayingDebtId] = useState<number | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [serverError, setServerError] = useState<string | null>(null);
 
   const { data: debts, isLoading } = useQuery({ queryKey: ["debts"], queryFn: debtsService.list });
+  const { data: clients } = useQuery({ queryKey: ["clients"], queryFn: clientsService.list });
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<DebtFormData>({ resolver: zodResolver(debtSchema), defaultValues: { direction: "PAYABLE" } });
+
+  const handleNameModeChange = (mode: "client" | "custom") => {
+    setNameMode(mode);
+    // Clear whichever field the user isn't using so a stale value from
+    // before a mode switch can never sneak into the submitted payload.
+    if (mode === "client") {
+      setValue("person_name", "");
+    } else {
+      setValue("client", undefined);
+    }
+  };
 
   const onSubmit = async (data: DebtFormData) => {
     setServerError(null);
     try {
       await debtsService.create({
-        ...data,
+        client: nameMode === "client" ? data.client : undefined,
+        person_name: nameMode === "custom" ? data.person_name : undefined,
+        reason: data.reason,
+        direction: data.direction,
         total_amount: data.total_amount.replace(",", "."),
         due_date: data.due_date || null,
       });
       queryClient.invalidateQueries({ queryKey: ["debts"] });
       reset();
+      setNameMode("custom");
       setModalOpen(false);
     } catch (error) {
       setServerError(extractErrorMessage(error, "Não foi possível cadastrar a dívida."));
@@ -85,7 +104,7 @@ export function DebtsPage() {
         {debts?.map((debt) => (
           <Card key={debt.id}>
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{debt.person_name}</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{debt.display_name}</h3>
               <Badge tone={debt.direction === "RECEIVABLE" ? "success" : "warning"}>
                 {debt.direction === "RECEIVABLE" ? "A receber" : "A pagar"}
               </Badge>
@@ -121,7 +140,41 @@ export function DebtsPage() {
 
       <Modal title="Nova dívida" isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <Input label="Pessoa" {...register("person_name")} error={errors.person_name?.message} />
+          <div>
+            <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Pessoa</span>
+            <div className="mb-2 flex gap-2">
+              <Button
+                type="button"
+                variant={nameMode === "custom" ? "primary" : "secondary"}
+                onClick={() => handleNameModeChange("custom")}
+              >
+                Nome personalizado
+              </Button>
+              <Button
+                type="button"
+                variant={nameMode === "client" ? "primary" : "secondary"}
+                onClick={() => handleNameModeChange("client")}
+              >
+                Cliente cadastrado
+              </Button>
+            </div>
+
+            {nameMode === "custom" ? (
+              <Input placeholder="Nome da pessoa" {...register("person_name")} error={errors.person_name?.message} />
+            ) : (
+              <Select {...register("client")} error={errors.person_name?.message} defaultValue="">
+                <option value="" disabled>
+                  Selecione um cliente...
+                </option>
+                {clients?.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.display_name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </div>
+
           <Input label="Motivo" {...register("reason")} error={errors.reason?.message} />
           <Select label="Direção" {...register("direction")}>
             <option value="PAYABLE">Eu devo (a pagar)</option>

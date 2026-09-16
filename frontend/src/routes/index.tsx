@@ -1,6 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "../layouts/AppLayout";
 import { AuthLayout } from "../layouts/AuthLayout";
+import { BudgetsPage } from "../pages/BudgetsPage";
+import { ClientsPage } from "../pages/ClientsPage";
+import { CreditCardsPage } from "../pages/CreditCardsPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { DebtsPage } from "../pages/DebtsPage";
 import { GoalsPage } from "../pages/GoalsPage";
@@ -8,7 +11,9 @@ import { ImportsPage } from "../pages/ImportsPage";
 import { LoginPage } from "../pages/LoginPage";
 import { PartnershipPage } from "../pages/PartnershipPage";
 import { ProfilePage } from "../pages/ProfilePage";
+import { RecurrencesPage } from "../pages/RecurrencesPage";
 import { RegisterPage } from "../pages/RegisterPage";
+import { ReportsPage } from "../pages/ReportsPage";
 import { TransactionFormPage } from "../pages/TransactionFormPage";
 import { TransactionsPage } from "../pages/TransactionsPage";
 import { ProtectedRoute } from "./protected-route";
@@ -29,9 +34,14 @@ export function AppRoutes() {
           <Route path="/app/dashboard" element={<DashboardPage />} />
           <Route path="/app/transactions" element={<TransactionsPage />} />
           <Route path="/app/transactions/new" element={<TransactionFormPage />} />
+          <Route path="/app/credit-cards" element={<CreditCardsPage />} />
+          <Route path="/app/recurrences" element={<RecurrencesPage />} />
+          <Route path="/app/budgets" element={<BudgetsPage />} />
           <Route path="/app/goals" element={<GoalsPage />} />
           <Route path="/app/debts" element={<DebtsPage />} />
+          <Route path="/app/clients" element={<ClientsPage />} />
           <Route path="/app/imports" element={<ImportsPage />} />
+          <Route path="/app/reports" element={<ReportsPage />} />
           <Route path="/app/partnership" element={<PartnershipPage />} />
           <Route path="/app/profile" element={<ProfilePage />} />
         </Route>

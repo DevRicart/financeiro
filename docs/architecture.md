@@ -21,20 +21,29 @@ Em produção, o Nginx fica na frente de tudo: serve os arquivos estáticos do R
 
 | App | Responsabilidade | Status |
 |---|---|---|
-| `accounts` | Usuário customizado (login por e-mail), JWT, troca/recuperação de senha | ✅ completo |
+| `accounts` | Usuário customizado (login por e-mail), JWT, troca/recuperação de senha, exclusão de conta | ✅ completo |
 | `couples` | Vínculo entre parceiros, convite/aceite, permissões de compartilhamento | ✅ completo |
 | `categories` | Categorias de receita/despesa, seed de 30 categorias padrão | ✅ completo |
-| `transactions` | Núcleo do sistema: receitas, despesas, contas financeiras, pagamentos/recebimentos (settlements), status automático | ✅ completo |
+| `transactions` | Núcleo do sistema: receitas, despesas, contas financeiras, pagamentos/recebimentos (settlements) com status automático, cartões de crédito e faturas, parcelamentos, recorrências, clientes e detalhamento de receita (salário/atendimento/freelancer) | ✅ completo |
 | `goals` | Metas financeiras e contribuições | ✅ completo |
 | `debts` | Dívidas a pagar/receber e pagamentos parciais | ✅ completo |
+| `budgets` | Orçamentos mensais por categoria, com alerta de percentual | ✅ completo |
+| `reports` | Exportação de transações (CSV/Excel) e resumo mensal em PDF | ✅ completo |
 | `dashboards` | Endpoints de agregação (sem tabelas próprias): resumo, evolução mensal, despesas por categoria | ✅ completo |
 | `bank_integration` | Conexão com a Pluggy, sincronização, fila de revisão de importações | ✅ completo |
-| `budgets` | Orçamentos mensais por categoria | ⬜ esqueleto vazio |
-| `reports` | Relatórios PDF/CSV/Excel | ⬜ esqueleto vazio |
 | `notifications` | Notificações (alertas de orçamento, vencimentos) | ⬜ esqueleto vazio |
-| `common` | Utilidades compartilhadas entre apps | ⬜ vazio, sem uso ainda |
+| `common` | Utilidades compartilhadas: helpers de data (`dates.py`, usados por parcelamento/recorrência/fatura de cartão) e o exception handler global (`exceptions.py`) | ✅ em uso |
 
 Padrão interno adotado no app `transactions` (o mais complexo): `models/`, `serializers/`, `services/` (escreve dados), `selectors/` (consultas), `permissions/`, `filters/` — todos como subpacotes. Os demais apps usam arquivos únicos (`serializers.py`, `views.py`) por serem CRUDs mais simples; adote o mesmo padrão de `transactions` neles se a lógica crescer.
+
+### Exception handler global (`apps/common/exceptions.py`)
+
+Duas classes de erro que bibliotecas do próprio Django/DRF não convertem sozinhas em uma resposta de API limpa, e que apareceram de verdade durante os testes manuais desta etapa:
+
+- `django.db.models.deletion.ProtectedError` (de campos `on_delete=PROTECT`, como `CreditCardPurchase.credit_card`) → vira `409 Conflict` em vez de um 500 cru.
+- `User.DoesNotExist` dentro do `TokenRefreshView` do SimpleJWT (um refresh token cuja conta foi excluída em outro dispositivo) → vira `401` em vez de 500.
+
+Configurado em `REST_FRAMEWORK["EXCEPTION_HANDLER"]` (`config/settings/base.py`), então vale para toda a API automaticamente.
 
 ## Frontend (`frontend/src/`)
 

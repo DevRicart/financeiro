@@ -14,6 +14,7 @@ interface AuthContextValue {
     preferred_name?: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -62,9 +63,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const deleteAccount = useCallback(async (password: string) => {
+    await authService.deleteAccount(password);
+    setUser(null);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, isLoading, login, register, logout, refreshUser }),
-    [user, isLoading, login, register, logout, refreshUser],
+    () => ({ user, isLoading, login, register, logout, deleteAccount, refreshUser }),
+    [user, isLoading, login, register, logout, deleteAccount, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

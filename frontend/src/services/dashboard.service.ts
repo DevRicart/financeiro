@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { DashboardSummary, ExpenseByCategory, MonthlyEvolutionPoint } from "../types/dashboard";
+import type { CoupleSummary, DashboardSummary, ExpenseByCategory, MonthlyEvolutionPoint } from "../types/dashboard";
 
 export const dashboardService = {
   async summary(month?: string) {
@@ -18,6 +18,11 @@ export const dashboardService = {
     const { data } = await api.get<MonthlyEvolutionPoint[]>("/dashboard/monthly-evolution/", {
       params: { months },
     });
+    return data;
+  },
+
+  async coupleSummary(month?: string) {
+    const { data } = await api.get<CoupleSummary>("/dashboard/couple-summary/", { params: { month } });
     return data;
   },
 };

@@ -24,3 +24,28 @@ export interface MonthlyEvolutionPoint {
   expense: number;
   balance: number;
 }
+
+export interface CoupleSummaryPartner {
+  partnership_id: number;
+  partner_id: number;
+  partner_name: string;
+  shares_income_totals: boolean;
+  shares_expense_totals: boolean;
+  shares_goals: boolean;
+  shares_debts: boolean;
+  income_total?: number;
+  income_received?: number;
+  expense_total?: number;
+  expense_paid?: number;
+}
+
+export interface CoupleSummary {
+  month: string;
+  own: Omit<DashboardSummary, "month">;
+  partners: CoupleSummaryPartner[];
+  combined: {
+    income_total: number;
+    expense_total: number;
+    balance: number;
+  };
+}

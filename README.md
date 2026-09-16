@@ -28,22 +28,24 @@ Veja [docs/architecture.md](docs/architecture.md) para a visão geral de cada ap
 - Transações: criar receita/despesa, registrar pagamento/recebimento (total ou parcial), status calculado automaticamente (Pendente → Parcial → Concluída), exclusão
 - Dashboard: saldo do mês, receita/despesa prevista vs. realizada, resultado por caixa e por competência, gráfico de despesas por categoria, evolução mensal
 - Metas financeiras com contribuições e progresso
-- Dívidas (a pagar/a receber) com pagamentos parciais
+- Dívidas (a pagar/a receber) com pagamentos parciais — pessoa pode ser um cliente cadastrado **ou** um nome digitado livremente
 - Vínculo entre parceiros (convite/aceite/recusa) com permissões granulares de compartilhamento
+- **Visão do casal no dashboard:** totais combinados dos dois parceiros, respeitando exatamente o que cada permissão de compartilhamento libera (testado nos dois sentidos do vínculo)
 - **Importação via Open Finance (Pluggy):** conectar um banco, sincronizar automaticamente ao abrir o app, revisar cada movimentação importada atribuindo categoria e descrição antes dela virar uma transação real — exatamente o fluxo que você descreveu
+- **Cartões de crédito:** compra no cartão vinculada à transação, cálculo automático do mês da fatura (considerando o dia de fechamento), visualização e pagamento em lote da fatura
+- **Parcelamentos:** gera automaticamente as N transações mensais (última parcela absorve o arredondamento), exclusão remove todas de uma vez
+- **Recorrências:** salário/aluguel/assinaturas geram lançamentos automaticamente ao abrir o dashboard, preenchendo até os meses que ficaram para trás (idempotente — não duplica)
+- **Detalhamento de receita:** Salário (empresa, valor líquido/bruto, mês de referência), Atendimento e Freelancer (cliente, data, duração/prazo) — com cadastro de clientes
+- **Orçamentos mensais** por categoria com alerta de percentual configurável
+- **Relatórios:** exportação de transações em CSV/Excel com os mesmos filtros da tela de transações, resumo mensal em PDF
+- **Exclusão de conta**, com confirmação de senha
 
 ## O que ainda não foi implementado (próximos passos)
 
-Ficou de fora desta primeira etapa, na ordem sugerida pelo documento original:
-
-- Cartões de crédito, faturas e parcelamentos
-- Despesas/receitas recorrentes automáticas (o modelo existe no papel, falta a geração automática)
-- Orçamentos mensais por categoria (`apps/budgets` existe como esqueleto vazio)
-- Relatórios em PDF/CSV/Excel (`apps/reports` existe como esqueleto vazio)
-- Notificações (`apps/notifications` existe como esqueleto vazio)
-- Detalhamento por tipo de receita (Salário/Atendimento/Freelancer têm campos específicos no documento original — hoje ficam só como uma classificação simples em cada transação)
+- **Notificações** — decidido deliberadamente deixar de fora por enquanto (`apps/notifications` continua como esqueleto vazio)
 - Testes automatizados do frontend (Vitest/Playwright, mencionados no documento original)
-- Visão "casal" cruzando dados dos dois parceiros nos dashboards (as permissões já existem no backend, falta a consulta cruzada)
+- Importação de planilhas antigas (o documento original menciona migrar dados de antes do sistema existir — baixa prioridade agora que o Open Finance cobre a entrada de dados bancários)
+- `share_client_names` e `share_accounts` (duas das permissões do casal) ainda não são consultadas em nenhuma tela — hoje a visão do casal cobre totais de receita/despesa, metas e dívidas do parceiro
 
 ## Rodando localmente
 

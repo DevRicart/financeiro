@@ -5,6 +5,7 @@ import { Card } from "../components/ui/Card";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { bankService } from "../services/bank.service";
 import { dashboardService } from "../services/dashboard.service";
+import { recurrencesService } from "../services/recurrences.service";
 import { formatCurrency } from "../utils/currency";
 import { currentMonthValue } from "../utils/dates";
 
@@ -14,9 +15,11 @@ export function DashboardPage() {
   const [month] = useState(currentMonthValue());
 
   useEffect(() => {
-    // "quando eu acessar o aplicativo": refresca as conexões bancárias
-    // conectadas assim que o dashboard abre. Sem conexões, é um no-op.
+    // "quando eu acessar o aplicativo": refresca as conexões bancárias e
+    // gera lançamentos recorrentes pendentes assim que o dashboard abre.
+    // Sem conexões/recorrências cadastradas, ambas são um no-op.
     bankService.syncAll().catch(() => undefined);
+    recurrencesService.generate().catch(() => undefined);
   }, []);
 
   const summaryQuery = useQuery({
@@ -32,6 +35,11 @@ export function DashboardPage() {
   const evolutionQuery = useQuery({
     queryKey: ["dashboard-monthly-evolution"],
     queryFn: () => dashboardService.monthlyEvolution(6),
+  });
+
+  const coupleQuery = useQuery({
+    queryKey: ["dashboard-couple-summary", month],
+    queryFn: () => dashboardService.coupleSummary(month),
   });
 
   if (summaryQuery.isLoading) return <LoadingSpinner label="Carregando dashboard..." />;
@@ -99,6 +107,53 @@ export function DashboardPage() {
           )}
         </Card>
       </div>
+
+      {coupleQuery.data && coupleQuery.data.partners.length > 0 && (
+        <Card>
+          <h2 className="mb-4 font-semibold text-slate-900 dark:text-slate-100">Visão do casal</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Você
+              </p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                Receita: {formatCurrency(coupleQuery.data.own.income_total)} · Despesa:{" "}
+                {formatCurrency(coupleQuery.data.own.expense_total)}
+              </p>
+            </div>
+
+            {coupleQuery.data.partners.map((partner) => (
+              <div key={partner.partnership_id}>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  {partner.partner_name}
+                </p>
+                {!partner.shares_income_totals && !partner.shares_expense_totals ? (
+                  <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
+                    Não compartilha totais com você.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                    {partner.shares_income_totals && `Receita: ${formatCurrency(partner.income_total ?? 0)}`}
+                    {partner.shares_income_totals && partner.shares_expense_totals && " · "}
+                    {partner.shares_expense_totals && `Despesa: ${formatCurrency(partner.expense_total ?? 0)}`}
+                  </p>
+                )}
+              </div>
+            ))}
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Conjunto
+              </p>
+              <p
+                className={`mt-1 text-sm font-semibold ${coupleQuery.data.combined.balance >= 0 ? "text-green-600" : "text-red-600"}`}
+              >
+                Saldo: {formatCurrency(coupleQuery.data.combined.balance)}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

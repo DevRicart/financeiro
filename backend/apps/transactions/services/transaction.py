@@ -1,6 +1,33 @@
 from django.db.models import Sum
 
-from apps.transactions.models import Transaction, TransactionSettlement
+from apps.common.dates import compute_invoice_month
+from apps.transactions.models import (
+    CreditCardPurchase,
+    FreelanceDetail,
+    SalaryDetail,
+    ServiceIncomeDetail,
+    Transaction,
+    TransactionSettlement,
+)
+
+_DETAIL_MODELS = {
+    "salary_detail": SalaryDetail,
+    "service_detail": ServiceIncomeDetail,
+    "freelance_detail": FreelanceDetail,
+}
+
+
+def _pop_detail_data(validated_data):
+    return {key: validated_data.pop(key, None) for key in _DETAIL_MODELS}
+
+
+def _save_details(transaction, detail_data):
+    # A key missing from the request (data is None) means "not sent this
+    # time" — leave whatever detail row already exists untouched. It never
+    # means "clear it": these nested fields don't allow_null.
+    for key, data in detail_data.items():
+        if data is not None:
+            _DETAIL_MODELS[key].objects.update_or_create(transaction=transaction, defaults=data)
 
 
 def _recompute_status(transaction):
@@ -33,13 +60,29 @@ def _recompute_status(transaction):
 
 
 def create_transaction(*, user, validated_data):
-    return Transaction.objects.create(owner=user, **validated_data)
+    credit_card = validated_data.pop("credit_card", None)
+    detail_data = _pop_detail_data(validated_data)
+
+    transaction = Transaction.objects.create(owner=user, **validated_data)
+    _save_details(transaction, detail_data)
+
+    if credit_card is not None:
+        CreditCardPurchase.objects.create(
+            transaction=transaction,
+            credit_card=credit_card,
+            purchase_date=transaction.competence_date,
+            invoice_month=compute_invoice_month(transaction.competence_date, credit_card.closing_day),
+        )
+
+    return transaction
 
 
 def update_transaction(*, transaction, validated_data):
+    detail_data = _pop_detail_data(validated_data)
     for field, value in validated_data.items():
         setattr(transaction, field, value)
     transaction.save()
+    _save_details(transaction, detail_data)
     return transaction
 
 

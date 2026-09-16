@@ -19,7 +19,9 @@ O modelo implementado (`apps/couples`) segue o que o documento original pedia: *
 
 **Limitação conhecida:** essas flags são únicas por vínculo, não por direção. Ou seja, hoje não é possível a pessoa A compartilhar totais de despesa com B sem que B também compartilhe com A — é uma configuração simétrica. O documento original também sugeria isso implicitamente ("cada pessoa controla o que o parceiro vê sobre ela"), mas o modelo de dados fornecido (`PartnershipPermission` como `OneToOneField` para `Partnership`) só comporta uma configuração compartilhada. Se quiser controle assimétrico de verdade, o ajuste é trocar o `OneToOneField` por duas linhas (uma por direção) ou adicionar um `ForeignKey(User)` em `PartnershipPermission` indicando de quem é a configuração.
 
-**Também ainda não implementado:** os endpoints de transações/metas/dívidas ainda não *consultam* essas permissões para decidir o que mostrar do parceiro — elas já podem ser criadas e editadas via API, mas nenhuma tela ainda cruza dados dos dois usuários. Isso é o próximo passo natural para a visão "conjunta" do dashboard.
+**Implementado:** `GET /api/dashboard/couple-summary/` (`apps/dashboards/views.py::CoupleSummaryView`) já cruza dados dos dois parceiros respeitando `share_income_totals`, `share_expense_totals`, `share_goals` e `share_debts` — testado nos dois sentidos do vínculo (quem convidou e quem foi convidado) e com o caso de "nada compartilhado" (ver `apps/dashboards/tests/test_couple_summary.py`).
+
+**Ainda não implementado:** `share_client_names` (nomes de cliente dentro do detalhe de uma transação do parceiro) e `share_accounts` (contas financeiras do parceiro) — nenhuma tela consulta essas duas flags ainda.
 
 ## Dados sensíveis — o que este projeto deliberadamente não guarda
 

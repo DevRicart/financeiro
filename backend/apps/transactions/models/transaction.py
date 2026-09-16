@@ -54,6 +54,15 @@ class Transaction(models.Model):
     )
     is_shared = models.BooleanField(default=False)
 
+    recurrence_rule = models.ForeignKey(
+        "transactions.RecurrenceRule",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="generated_transactions",
+        help_text="Preenchido quando esta transação foi gerada automaticamente por uma recorrência.",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
