@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+
+# Django
+backend/media/
+backend/staticfiles/
+backend/static/**
+!backend/static/.gitkeep
+db.sqlite3
+db.sqlite3-journal
+*.log
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.tsbuildinfo
+npm-debug.log*
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Docker
+postgres_data/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Backups
+infrastructure/backups/*
+!infrastructure/backups/.gitkeep
+
+# Coverage / tests
+.coverage
+htmlcov/
+.pytest_cache/

@@ -1,0 +1,40 @@
+import { api, tokenStorage } from "./api";
+import type { LoginResponse, User } from "../types/auth";
+
+export const authService = {
+  async login(email: string, password: string) {
+    const { data } = await api.post<LoginResponse>("/auth/login/", { email, password });
+    tokenStorage.setTokens(data.access, data.refresh);
+    return data.user;
+  },
+
+  async register(payload: {
+    email: string;
+    username: string;
+    password: string;
+    preferred_name?: string;
+  }) {
+    const { data } = await api.post<LoginResponse>("/auth/register/", payload);
+    tokenStorage.setTokens(data.access, data.refresh);
+    return data.user;
+  },
+
+  async me() {
+    const { data } = await api.get<User>("/auth/me/");
+    return data;
+  },
+
+  async updateMe(payload: Partial<Pick<User, "preferred_name" | "currency" | "timezone">>) {
+    const { data } = await api.patch<User>("/auth/me/", payload);
+    return data;
+  },
+
+  async logout() {
+    const refresh = tokenStorage.getRefresh();
+    try {
+      if (refresh) await api.post("/auth/logout/", { refresh });
+    } finally {
+      tokenStorage.clear();
+    }
+  },
+};

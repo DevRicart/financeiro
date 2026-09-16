@@ -1,0 +1,22 @@
+export interface DebtPayment {
+  id: number;
+  debt: number;
+  amount: string;
+  payment_date: string;
+  payment_method: string;
+  notes: string;
+}
+
+export interface Debt {
+  id: number;
+  person_name: string;
+  reason: string;
+  direction: "RECEIVABLE" | "PAYABLE";
+  total_amount: string;
+  due_date: string | null;
+  status: "OPEN" | "PARTIAL" | "PAID" | "OVERDUE" | "CANCELLED";
+  payments: DebtPayment[];
+  paid_amount: number;
+  remaining_amount: number;
+  created_at: string;
+}

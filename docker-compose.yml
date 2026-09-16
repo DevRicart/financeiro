@@ -1,0 +1,46 @@
+services:
+  database:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-financeiro}
+      POSTGRES_USER: ${DATABASE_USER:-financeiro}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-financeiro}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        REQUIREMENTS_FILE: requirements/development.txt
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_categories &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+      DATABASE_HOST: database
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    depends_on:
+      - database
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
