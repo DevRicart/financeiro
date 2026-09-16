@@ -11,7 +11,7 @@ import { Select } from "../components/ui/Select";
 import { categoriesService } from "../services/categories.service";
 import { recurrencesService } from "../services/recurrences.service";
 import type { RecurrenceFrequency, TransactionType } from "../types/transaction";
-import { formatCurrency } from "../utils/currency";
+import { formatCurrency, parseCurrencyInput } from "../utils/currency";
 import { todayValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
 
@@ -50,7 +50,7 @@ export function RecurrencesPage() {
       await recurrencesService.create({
         title: form.title,
         transaction_type: form.transaction_type,
-        amount: form.amount.replace(",", "."),
+        amount: parseCurrencyInput(form.amount),
         category: Number(form.category),
         frequency: form.frequency,
         start_date: form.start_date,

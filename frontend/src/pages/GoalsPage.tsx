@@ -11,7 +11,7 @@ import { Modal } from "../components/ui/Modal";
 import { Select } from "../components/ui/Select";
 import { goalSchema, type GoalFormData } from "../schemas/goal.schema";
 import { goalsService } from "../services/goals.service";
-import { formatCurrency } from "../utils/currency";
+import { formatCurrency, parseCurrencyInput } from "../utils/currency";
 import { todayValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
 
@@ -36,7 +36,7 @@ export function GoalsPage() {
     try {
       await goalsService.create({
         ...data,
-        target_amount: data.target_amount.replace(",", "."),
+        target_amount: parseCurrencyInput(data.target_amount),
         deadline: data.deadline || null,
       });
       queryClient.invalidateQueries({ queryKey: ["goals"] });
@@ -50,7 +50,7 @@ export function GoalsPage() {
   const handleContribute = async (goalId: number) => {
     if (!contributionAmount) return;
     await goalsService.contribute(goalId, {
-      amount: contributionAmount.replace(",", "."),
+      amount: parseCurrencyInput(contributionAmount),
       contribution_date: todayValue(),
     });
     queryClient.invalidateQueries({ queryKey: ["goals"] });
@@ -108,7 +108,7 @@ export function GoalsPage() {
       </div>
 
       <Modal title="Nova meta" isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
           <Input label="Nome" {...register("name")} error={errors.name?.message} />
           <Select label="Tipo" {...register("goal_type")}>
             <option value="INDIVIDUAL">Individual</option>

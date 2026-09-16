@@ -11,6 +11,7 @@ import { categoriesService } from "../services/categories.service";
 import { clientsService } from "../services/clients.service";
 import { creditCardsService } from "../services/credit-cards.service";
 import { transactionsService, type TransactionPayload } from "../services/transactions.service";
+import { parseCurrencyInput } from "../utils/currency";
 import { todayValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
 
@@ -72,7 +73,7 @@ export function TransactionFormPage() {
         category: data.category,
         title: data.title,
         description: data.description,
-        total_amount: data.total_amount.replace(",", "."),
+        total_amount: parseCurrencyInput(data.total_amount),
         competence_date: data.competence_date,
         due_date: data.due_date ? data.due_date : null,
         is_shared: data.is_shared,
@@ -85,7 +86,7 @@ export function TransactionFormPage() {
           payload.salary_detail = {
             employer_name: data.salary_employer_name ?? "",
             gross_amount: null,
-            net_amount: data.salary_net_amount.replace(",", "."),
+            net_amount: parseCurrencyInput(data.salary_net_amount),
             reference_month: data.salary_reference_month || data.competence_date,
           };
         }
@@ -127,6 +128,7 @@ export function TransactionFormPage() {
       <h1 className="mb-6 text-2xl font-bold text-slate-900 dark:text-slate-100">Nova transação</h1>
       <form
         onSubmit={handleSubmit(onSubmit)}
+        noValidate
         className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
       >
         <Select label="Tipo" {...register("transaction_type")}>

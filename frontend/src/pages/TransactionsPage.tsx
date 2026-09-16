@@ -15,7 +15,7 @@ import { categoriesService } from "../services/categories.service";
 import { installmentsService } from "../services/installments.service";
 import { transactionsService } from "../services/transactions.service";
 import type { Transaction, TransactionStatus, TransactionType } from "../types/transaction";
-import { formatCurrency } from "../utils/currency";
+import { formatCurrency, parseCurrencyInput } from "../utils/currency";
 import { formatDate, todayValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
 
@@ -41,7 +41,7 @@ const installmentSchema = z.object({
   total_amount: z
     .string()
     .min(1, "Informe o valor")
-    .refine((value) => Number(value.replace(",", ".")) > 0, "Valor deve ser maior que zero"),
+    .refine((value) => Number(parseCurrencyInput(value)) > 0, "Valor deve ser maior que zero"),
   installment_count: z.coerce.number().min(2, "Mínimo de 2 parcelas").max(360),
   first_due_date: z.string().min(1, "Informe a data da primeira parcela"),
 });
@@ -96,7 +96,7 @@ export function TransactionsPage() {
       await installmentsService.create({
         description: data.description,
         category: data.category,
-        total_amount: data.total_amount.replace(",", "."),
+        total_amount: parseCurrencyInput(data.total_amount),
         installment_count: data.installment_count,
         first_due_date: data.first_due_date,
       });
@@ -204,7 +204,7 @@ export function TransactionsPage() {
         isOpen={isInstallmentModalOpen}
         onClose={() => setInstallmentModalOpen(false)}
       >
-        <form onSubmit={handleSubmit(onCreateInstallmentPlan)} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onCreateInstallmentPlan)} noValidate className="flex flex-col gap-4">
           <Input label="Descrição" {...register("description")} error={errors.description?.message} />
           <Select label="Categoria" {...register("category")} error={errors.category?.message} defaultValue="">
             <option value="" disabled>

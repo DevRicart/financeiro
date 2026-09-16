@@ -10,7 +10,7 @@ import { Modal } from "../components/ui/Modal";
 import { Select } from "../components/ui/Select";
 import { budgetsService } from "../services/budgets.service";
 import { categoriesService } from "../services/categories.service";
-import { formatCurrency } from "../utils/currency";
+import { formatCurrency, parseCurrencyInput } from "../utils/currency";
 import { currentMonthValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
 
@@ -40,7 +40,7 @@ export function BudgetsPage() {
       await budgetsService.create({
         category: Number(form.category),
         month: `${month}-01`,
-        limit_amount: form.limit_amount.replace(",", "."),
+        limit_amount: parseCurrencyInput(form.limit_amount),
         alert_percentage: Number(form.alert_percentage),
       });
       queryClient.invalidateQueries({ queryKey: ["budgets"] });

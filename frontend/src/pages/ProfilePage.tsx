@@ -71,7 +71,7 @@ export function ProfilePage() {
       <div>
         <h1 className="mb-6 text-2xl font-bold text-slate-900 dark:text-slate-100">Perfil</h1>
         <Card>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
             <Input label="E-mail" value={user?.email ?? ""} disabled />
             <Input label="Nome" {...register("preferred_name")} error={errors.preferred_name?.message} />
             <Input label="Moeda" {...register("currency")} error={errors.currency?.message} />

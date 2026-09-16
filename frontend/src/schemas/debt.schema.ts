@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseCurrencyInput } from "../utils/currency";
 
 export const debtSchema = z
   .object({
@@ -9,7 +10,7 @@ export const debtSchema = z
     total_amount: z
       .string()
       .min(1, "Informe o valor")
-      .refine((value) => Number(value.replace(",", ".")) > 0, "Valor deve ser maior que zero"),
+      .refine((value) => Number(parseCurrencyInput(value)) > 0, "Valor deve ser maior que zero"),
     due_date: z.string().optional(),
   })
   .refine((data) => Boolean(data.client) || Boolean(data.person_name?.trim()), {

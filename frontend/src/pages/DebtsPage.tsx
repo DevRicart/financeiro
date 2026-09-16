@@ -14,7 +14,7 @@ import { debtSchema, type DebtFormData } from "../schemas/debt.schema";
 import { clientsService } from "../services/clients.service";
 import { debtsService } from "../services/debts.service";
 import type { Debt } from "../types/debt";
-import { formatCurrency } from "../utils/currency";
+import { formatCurrency, parseCurrencyInput } from "../utils/currency";
 import { todayValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
 
@@ -64,7 +64,7 @@ export function DebtsPage() {
         person_name: nameMode === "custom" ? data.person_name : undefined,
         reason: data.reason,
         direction: data.direction,
-        total_amount: data.total_amount.replace(",", "."),
+        total_amount: parseCurrencyInput(data.total_amount),
         due_date: data.due_date || null,
       });
       queryClient.invalidateQueries({ queryKey: ["debts"] });
@@ -79,7 +79,7 @@ export function DebtsPage() {
   const handlePay = async (debtId: number) => {
     if (!paymentAmount) return;
     await debtsService.pay(debtId, {
-      amount: paymentAmount.replace(",", "."),
+      amount: parseCurrencyInput(paymentAmount),
       payment_date: todayValue(),
       payment_method: "PIX",
     });
@@ -139,7 +139,7 @@ export function DebtsPage() {
       </div>
 
       <Modal title="Nova dívida" isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
           <div>
             <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Pessoa</span>
             <div className="mb-2 flex gap-2">

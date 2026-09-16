@@ -39,11 +39,12 @@ Veja [docs/architecture.md](docs/architecture.md) para a visão geral de cada ap
 - **Orçamentos mensais** por categoria com alerta de percentual configurável
 - **Relatórios:** exportação de transações em CSV/Excel com os mesmos filtros da tela de transações, resumo mensal em PDF
 - **Exclusão de conta**, com confirmação de senha
+- **Testes automatizados:** 48 testes de backend (pytest) + 69 de frontend (Vitest + React Testing Library) — veja [Testes](#testes) abaixo
 
 ## O que ainda não foi implementado (próximos passos)
 
 - **Notificações** — decidido deliberadamente deixar de fora por enquanto (`apps/notifications` continua como esqueleto vazio)
-- Testes automatizados do frontend (Vitest/Playwright, mencionados no documento original)
+- Testes end-to-end de navegador (Playwright) — os testes de frontend hoje são unitários/integração (Vitest + Testing Library), sem um navegador real
 - Importação de planilhas antigas (o documento original menciona migrar dados de antes do sistema existir — baixa prioridade agora que o Open Finance cobre a entrada de dados bancários)
 - `share_client_names` e `share_accounts` (duas das permissões do casal) ainda não são consultadas em nenhuma tela — hoje a visão do casal cobre totais de receita/despesa, metas e dívidas do parceiro
 
@@ -106,6 +107,13 @@ npm run dev
 
 Frontend em `http://localhost:5173`.
 
+Rodar os testes:
+
+```bash
+npm test           # roda uma vez
+npm run test:watch # modo watch
+```
+
 ### 4. Com Docker (depois de instalar o Docker Desktop)
 
 ```bash
@@ -128,6 +136,18 @@ Sobe backend (Postgres real), frontend e banco juntos, já aplicando migrações
 > A integração com o widget de conexão da Pluggy (`react-pluggy-connect`) foi implementada com base na documentação pública disponível no momento — o formato exato do callback `onSuccess` não pôde ser confirmado nos documentos acessíveis e está tratado de forma defensiva em [`ImportsPage.tsx`](frontend/src/pages/ImportsPage.tsx). Ao configurar suas credenciais reais, se a conexão não completar, confira o retorno do evento no console do navegador e ajuste a extração do `itemId` conforme necessário — é a única peça desta implementação que não pude testar de ponta a ponta sem uma conta Pluggy real.
 
 Sem as credenciais configuradas, o backend responde com um erro claro (503) em vez de quebrar — o app continua funcionando normalmente só com lançamentos manuais.
+
+## Testes
+
+| Camada | Ferramenta | Comando | Cobertura |
+|---|---|---|---|
+| Backend | pytest + pytest-django | `python -m pytest` (dentro de `backend/`, venv ativa) | 48 testes — models, services, permissões entre usuários, exportações, visão do casal |
+| Frontend | Vitest + React Testing Library | `npm test` (dentro de `frontend/`) | 69 testes — utils, schemas Zod, componentes de UI, `AuthContext`, fluxo completo da tela de login |
+
+Escrever esses testes revelou dois bugs reais que passavam despercebidos em teste manual no navegador:
+
+- **Valor com milhar quebrava o formulário:** `total_amount.replace(",", ".")` só troca a primeira vírgula, então "1.234,56" virava "1.234.56" (dois pontos, `NaN`). Qualquer lançamento a partir de R$ 1.000 falhava silenciosamente na validação. Corrigido com [`parseCurrencyInput`](frontend/src/utils/currency.ts), que remove os separadores de milhar antes de trocar a vírgula decimal — usado agora nos 9 lugares que antes faziam esse replace direto.
+- **Mensagem de erro em português nunca aparecia:** os formulários não tinham `noValidate`, então o navegador (ou o jsdom, no teste) bloqueava o `submit` pela validação nativa do HTML5 (`type="email"` etc.) antes do React Hook Form/Zod rodarem — o usuário via a bolha genérica do navegador em vez de "E-mail inválido". Adicionado `noValidate` nos 7 formulários do app.
 
 ## Publicando em uma VPS
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseCurrencyInput } from "../utils/currency";
 
 export const transactionSchema = z.object({
   transaction_type: z.enum(["INCOME", "EXPENSE"]),
@@ -8,7 +9,7 @@ export const transactionSchema = z.object({
   total_amount: z
     .string()
     .min(1, "Informe o valor")
-    .refine((value) => Number(value.replace(",", ".")) > 0, "Valor deve ser maior que zero"),
+    .refine((value) => Number(parseCurrencyInput(value)) > 0, "Valor deve ser maior que zero"),
   competence_date: z.string().min(1, "Informe a data"),
   due_date: z.string().optional(),
   is_shared: z.boolean().optional(),
