@@ -19,7 +19,6 @@ describe("registerSchema", () => {
   const valid = {
     preferred_name: "Ana",
     email: "ana@example.com",
-    username: "ana",
     password: "SenhaForte123",
     confirm_password: "SenhaForte123",
   };
@@ -38,10 +37,6 @@ describe("registerSchema", () => {
 
   it("rejects a password shorter than 8 characters", () => {
     expect(registerSchema.safeParse({ ...valid, password: "abc", confirm_password: "abc" }).success).toBe(false);
-  });
-
-  it("rejects a username shorter than 3 characters", () => {
-    expect(registerSchema.safeParse({ ...valid, username: "an" }).success).toBe(false);
   });
 
   it("rejects a blank preferred_name", () => {

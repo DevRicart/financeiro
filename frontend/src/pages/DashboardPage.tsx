@@ -1,24 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight, FileDown, FileUp, Repeat } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "../components/ui/Card";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
-import { bankService } from "../services/bank.service";
 import { dashboardService } from "../services/dashboard.service";
 import { recurrencesService } from "../services/recurrences.service";
 import { formatCurrency } from "../utils/currency";
-import { currentMonthValue } from "../utils/dates";
+import { currentMonthValue, formatMonthLabel, shiftMonth } from "../utils/dates";
 
-const CHART_COLORS = ["#0f172a", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#16a34a", "#dc2626", "#2563eb"];
+const CATEGORY_BAR_COLOR = "#4a6350";
 
 export function DashboardPage() {
-  const [month] = useState(currentMonthValue());
+  const [month, setMonth] = useState(currentMonthValue());
 
   useEffect(() => {
-    // "quando eu acessar o aplicativo": refresca as conexões bancárias e
-    // gera lançamentos recorrentes pendentes assim que o dashboard abre.
-    // Sem conexões/recorrências cadastradas, ambas são um no-op.
-    bankService.syncAll().catch(() => undefined);
+    // Gera lançamentos recorrentes pendentes assim que o dashboard abre.
+    // Sem recorrências cadastradas, isso é um no-op.
     recurrencesService.generate().catch(() => undefined);
   }, []);
 
@@ -45,44 +43,113 @@ export function DashboardPage() {
   if (summaryQuery.isLoading) return <LoadingSpinner label="Carregando dashboard..." />;
 
   const summary = summaryQuery.data;
+  const netResult = (summary?.accrual_profit ?? 0) >= 0;
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Mês de referência: {month}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">{formatMonthLabel(month)}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Resumo do mês, com o que já aconteceu e o que ainda vai entrar ou sair.
+          </p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setMonth((current) => shiftMonth(current, -1))}
+            aria-label="Mês anterior"
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMonth((current) => shiftMonth(current, 1))}
+            aria-label="Próximo mês"
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-        <SummaryCard label="Receita recebida" value={summary?.income_received} tone="income" />
-        <SummaryCard label="Despesa paga" value={summary?.expense_paid} tone="expense" />
-        <SummaryCard
-          label="Saldo do mês"
-          value={summary?.cash_profit}
-          tone={(summary?.cash_profit ?? 0) >= 0 ? "income" : "expense"}
-        />
-        <SummaryCard label="A receber" value={summary?.income_pending} tone="neutral" />
-        <SummaryCard label="A pagar" value={summary?.expense_pending} tone="neutral" />
-        <SummaryCard
-          label="Resultado (competência)"
-          value={summary?.accrual_profit}
-          tone={(summary?.accrual_profit ?? 0) >= 0 ? "income" : "expense"}
-        />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[2fr_1fr]">
+        <Card>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Resultado previsto do mês</p>
+          <p className={`mt-1 font-serif text-4xl font-medium ${netResult ? "text-green-700" : "text-red-600"}`}>
+            {formatCurrency(summary?.accrual_profit ?? 0)}
+          </p>
+          {(summary?.income_pending ?? 0) > 0 && (
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Considera os {formatCurrency(summary?.income_pending ?? 0)} pendentes de recebimento.
+            </p>
+          )}
+          <div className="mt-4 grid grid-cols-3 gap-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Recebido</p>
+              <p className="mt-0.5 font-medium text-green-700">{formatCurrency(summary?.income_received ?? 0)}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Pago</p>
+              <p className="mt-0.5 font-medium text-red-600">{formatCurrency(summary?.expense_paid ?? 0)}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Saldo realizado</p>
+              <p className={`mt-0.5 font-medium ${(summary?.cash_profit ?? 0) >= 0 ? "text-green-700" : "text-red-600"}`}>
+                {formatCurrency(summary?.cash_profit ?? 0)}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+          <MiniStat
+            icon={FileDown}
+            label="A receber"
+            detail={(summary?.income_pending ?? 0) > 0 ? "Ainda tem lançamento pendente" : "Nada pendente"}
+            value={formatCurrency(summary?.income_pending ?? 0)}
+            tone="income"
+          />
+          <MiniStat
+            icon={FileUp}
+            label="A pagar"
+            detail={(summary?.expense_pending ?? 0) > 0 ? "Ainda tem lançamento pendente" : "Nada pendente"}
+            value={formatCurrency(summary?.expense_pending ?? 0)}
+            tone="expense"
+          />
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
-          <h2 className="mb-4 font-semibold text-slate-900 dark:text-slate-100">Despesas por categoria</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900 dark:text-slate-100">Despesas por categoria</h2>
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              {formatCurrency(summary?.expense_paid ?? 0)}
+            </span>
+          </div>
           {expensesQuery.data && expensesQuery.data.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie data={expensesQuery.data} dataKey="total" nameKey="category__name" innerRadius={60} outerRadius={100}>
-                  {expensesQuery.data.map((entry, index) => (
-                    <Cell key={entry.category__id} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
+            <ResponsiveContainer width="100%" height={Math.max(160, expensesQuery.data.length * 36)}>
+              <BarChart
+                data={expensesQuery.data}
+                layout="vertical"
+                margin={{ left: 12, right: 24, top: 0, bottom: 0 }}
+                barCategoryGap={10}
+              >
+                <CartesianGrid horizontal={false} stroke="#eae8e0" />
+                <XAxis type="number" hide />
+                <YAxis
+                  type="category"
+                  dataKey="category__name"
+                  width={110}
+                  tick={{ fontSize: 13, fill: "#38493c" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
                 <Tooltip formatter={(value) => formatCurrency(String(value))} />
-              </PieChart>
+                <Bar dataKey="total" fill={CATEGORY_BAR_COLOR} radius={[0, 4, 4, 0]} barSize={14} />
+              </BarChart>
             </ResponsiveContainer>
           ) : (
             <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
@@ -92,16 +159,16 @@ export function DashboardPage() {
         </Card>
 
         <Card>
-          <h2 className="mb-4 font-semibold text-slate-900 dark:text-slate-100">Evolução mensal</h2>
+          <h2 className="mb-4 font-semibold text-slate-900 dark:text-slate-100">Últimos 6 meses</h2>
           {evolutionQuery.data && (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={evolutionQuery.data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+              <BarChart data={evolutionQuery.data} barGap={4}>
+                <CartesianGrid vertical={false} stroke="#eae8e0" />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#66806c" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: "#66806c" }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(value) => formatCurrency(String(value))} />
-                <Bar dataKey="income" fill="#16a34a" name="Receita" />
-                <Bar dataKey="expense" fill="#dc2626" name="Despesa" />
+                <Bar dataKey="income" fill="#16a34a" name="Receita" radius={[3, 3, 0, 0]} barSize={10} />
+                <Bar dataKey="expense" fill="#dc2626" name="Despesa" radius={[3, 3, 0, 0]} barSize={10} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -158,21 +225,33 @@ export function DashboardPage() {
   );
 }
 
-function SummaryCard({
+function MiniStat({
+  icon: Icon,
   label,
+  detail,
   value,
   tone,
 }: {
+  icon: typeof Repeat;
   label: string;
-  value?: number;
-  tone: "income" | "expense" | "neutral";
+  detail: string;
+  value: string;
+  tone: "income" | "expense";
 }) {
-  const toneClass =
-    tone === "income" ? "text-green-600" : tone === "expense" ? "text-red-600" : "text-slate-900 dark:text-slate-100";
   return (
-    <Card>
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`mt-1 text-lg font-semibold ${toneClass}`}>{formatCurrency(value ?? 0)}</p>
-    </Card>
+    <div className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+      <span
+        className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${
+          tone === "income" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+        }`}
+      >
+        <Icon size={16} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{label}</p>
+        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{detail}</p>
+      </div>
+      <p className={`flex-shrink-0 font-medium ${tone === "income" ? "text-green-700" : "text-red-600"}`}>{value}</p>
+    </div>
   );
 }

@@ -1,31 +1,19 @@
 import { api, type Paginated } from "./api";
-import type { BankConnection, ImportedTransaction } from "../types/bank";
+import type { ImportedTransaction, StatementImport } from "../types/bank";
 
 export const bankService = {
-  async createConnectToken(itemId?: string) {
-    const { data } = await api.post<{ access_token: string }>("/bank/connect-token/", {
-      item_id: itemId,
+  async uploadStatement(accountId: number, file: File) {
+    const formData = new FormData();
+    formData.append("account", String(accountId));
+    formData.append("file", file);
+    const { data } = await api.post<StatementImport>("/bank/statements/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
-    return data.access_token;
-  },
-
-  async listConnections() {
-    const { data } = await api.get<BankConnection[]>("/bank/connections/");
     return data;
   },
 
-  async registerConnection(itemId: string) {
-    const { data } = await api.post<BankConnection>("/bank/connections/", { item_id: itemId });
-    return data;
-  },
-
-  async syncConnection(connectionId: number) {
-    const { data } = await api.post<BankConnection>(`/bank/connections/${connectionId}/sync/`);
-    return data;
-  },
-
-  async syncAll() {
-    const { data } = await api.post<BankConnection[]>("/bank/sync-all/");
+  async listImportHistory() {
+    const { data } = await api.get<StatementImport[]>("/bank/statements/history/");
     return data;
   },
 

@@ -1,21 +1,12 @@
 import type { Category } from "./category";
 
-export interface SyncedAccount {
+export interface StatementImport {
   id: number;
-  name: string;
-  account_type: string;
-  balance: string;
-  currency_code: string;
-  financial_account: number | null;
-}
-
-export interface BankConnection {
-  id: number;
-  institution_name: string;
-  status: "UPDATING" | "UPDATED" | "LOGIN_ERROR" | "OUTDATED" | "ERROR";
-  last_synced_at: string | null;
-  created_at: string;
-  accounts: SyncedAccount[];
+  account: number;
+  account_name: string;
+  file_name: string;
+  transaction_count: number;
+  imported_at: string;
 }
 
 export interface ImportedTransaction {

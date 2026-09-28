@@ -1,12 +1,12 @@
 # Financeiro
 
-Sistema de organização financeira pessoal e compartilhada (casal), com importação automática de movimentações bancárias via Open Finance.
+Sistema de organização financeira pessoal e compartilhada (casal), com importação de movimentações bancárias a partir de extratos OFX.
 
 ## Stack
 
 - **Backend:** Python, Django, Django REST Framework, PostgreSQL (SQLite em dev local), JWT (SimpleJWT)
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, React Router, TanStack Query, React Hook Form, Zod, Recharts
-- **Open Finance:** [Pluggy](https://pluggy.ai) — agregador certificado para Open Finance Brasil
+- **Importação bancária:** extratos OFX (`ofxparse`) — sem integração com terceiros, veja [por quê](#importando-extratos-bancários-ofx)
 - **Infraestrutura:** Docker, Docker Compose, Nginx, Gunicorn, Let's Encrypt
 
 ## Estrutura do repositório
@@ -31,7 +31,7 @@ Veja [docs/architecture.md](docs/architecture.md) para a visão geral de cada ap
 - Dívidas (a pagar/a receber) com pagamentos parciais — pessoa pode ser um cliente cadastrado **ou** um nome digitado livremente
 - Vínculo entre parceiros (convite/aceite/recusa) com permissões granulares de compartilhamento
 - **Visão do casal no dashboard:** totais combinados dos dois parceiros, respeitando exatamente o que cada permissão de compartilhamento libera (testado nos dois sentidos do vínculo)
-- **Importação via Open Finance (Pluggy):** conectar um banco, sincronizar automaticamente ao abrir o app, revisar cada movimentação importada atribuindo categoria e descrição antes dela virar uma transação real — exatamente o fluxo que você descreveu
+- **Importação de extrato bancário (OFX):** exporte o extrato do seu banco (funciona com qualquer banco que ofereça OFX — a grande maioria) e importe aqui; revise cada movimentação atribuindo categoria e descrição antes dela virar uma transação real
 - **Cartões de crédito:** compra no cartão vinculada à transação, cálculo automático do mês da fatura (considerando o dia de fechamento), visualização e pagamento em lote da fatura
 - **Parcelamentos:** gera automaticamente as N transações mensais (última parcela absorve o arredondamento), exclusão remove todas de uma vez
 - **Recorrências:** salário/aluguel/assinaturas geram lançamentos automaticamente ao abrir o dashboard, preenchendo até os meses que ficaram para trás (idempotente — não duplica)
@@ -45,7 +45,8 @@ Veja [docs/architecture.md](docs/architecture.md) para a visão geral de cada ap
 
 - **Notificações** — decidido deliberadamente deixar de fora por enquanto (`apps/notifications` continua como esqueleto vazio)
 - Testes end-to-end de navegador (Playwright) — os testes de frontend hoje são unitários/integração (Vitest + Testing Library), sem um navegador real
-- Importação de planilhas antigas (o documento original menciona migrar dados de antes do sistema existir — baixa prioridade agora que o Open Finance cobre a entrada de dados bancários)
+- Importação de planilhas antigas (o documento original menciona migrar dados de antes do sistema existir — baixa prioridade agora que a importação de extrato OFX cobre a entrada de dados bancários correntes)
+- Importação via CSV — hoje só OFX é suportado; CSV exigiria mapeamento manual de colunas por não ser um formato padronizado entre bancos
 - `share_client_names` e `share_accounts` (duas das permissões do casal) ainda não são consultadas em nenhuma tela — hoje a visão do casal cobre totais de receita/despesa, metas e dívidas do parceiro
 
 ## Rodando localmente
@@ -122,20 +123,21 @@ docker compose up --build
 
 Sobe backend (Postgres real), frontend e banco juntos, já aplicando migrações e populando categorias.
 
-## Configurando o Open Finance (Pluggy)
+## Importando extratos bancários (OFX ou CSV)
 
-1. Crie uma conta em [dashboard.pluggy.ai](https://dashboard.pluggy.ai) — o sandbox é gratuito e tem bancos de teste.
-2. Gere `Client ID` e `Client Secret` no dashboard.
-3. Preencha no `.env`:
-   ```
-   PLUGGY_CLIENT_ID=...
-   PLUGGY_CLIENT_SECRET=...
-   ```
-4. Reinicie o backend. Na tela **Importações** do app, clique em "Conectar banco".
+O projeto começou com integração via Open Finance (Pluggy), mas o custo de produção da Pluggy (a partir de R$ 2.500/mês, sem plano gratuito real — só um teste de 15 dias) inviabiliza esse caminho para um app pessoal/casal. A troca foi por importação de extrato:
 
-> A integração com o widget de conexão da Pluggy (`react-pluggy-connect`) foi implementada com base na documentação pública disponível no momento — o formato exato do callback `onSuccess` não pôde ser confirmado nos documentos acessíveis e está tratado de forma defensiva em [`ImportsPage.tsx`](frontend/src/pages/ImportsPage.tsx). Ao configurar suas credenciais reais, se a conexão não completar, confira o retorno do evento no console do navegador e ajuste a extração do `itemId` conforme necessário — é a única peça desta implementação que não pude testar de ponta a ponta sem uma conta Pluggy real.
+- **OFX** — formato já padronizado e oferecido pela grande maioria dos bancos e fintechs brasileiros (Nubank, Santander, Itaú, Bradesco, Inter, C6, Caixa, Banco do Brasil, entre outros). Um único parser cobre qualquer banco que exporte OFX.
+- **CSV** — alguns bancos (ex: PicPay) só oferecem PDF ou CSV, sem opção de OFX. Diferente do OFX, o CSV **não é padronizado** — cada banco usa colunas diferentes — então cada formato precisa de um parser próprio. Hoje só o CSV do **PicPay** é suportado; outros bancos podem ser adicionados depois em `backend/apps/bank_integration/services/parsers/`.
 
-Sem as credenciais configuradas, o backend responde com um erro claro (503) em vez de quebrar — o app continua funcionando normalmente só com lançamentos manuais.
+Passo a passo:
+
+1. No app do seu banco, exporte o extrato do período desejado (formato OFX quando disponível; senão, CSV se for um dos bancos suportados).
+2. Cadastre uma conta financeira no app (tela **Contas**), se ainda não tiver uma.
+3. Na tela **Importações**, selecione a conta e envie o arquivo (`.ofx`, `.qfx` ou `.csv`) — o formato é detectado pela extensão.
+4. Revise cada movimentação importada, confirmando categoria e descrição (ou ignore as que não interessam).
+
+Reimportar um extrato com datas sobrepostas não duplica lançamentos — cada transação recebe um identificador único (o `FITID` no OFX; um hash das colunas da linha no CSV, já que ele não tem um ID próprio) usado para pular o que já foi importado antes para aquela conta.
 
 ## Testes
 

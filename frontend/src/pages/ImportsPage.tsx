@@ -1,7 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { PluggyConnect } from "react-pluggy-connect";
-import { Badge } from "../components/ui/Badge";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -10,17 +8,27 @@ import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { Select } from "../components/ui/Select";
 import { bankService } from "../services/bank.service";
 import { categoriesService } from "../services/categories.service";
+import { transactionsService } from "../services/transactions.service";
 import type { Category } from "../types/category";
 import type { ImportedTransaction } from "../types/bank";
 import { formatCurrency } from "../utils/currency";
 import { formatDate } from "../utils/dates";
+import { extractErrorMessage } from "../utils/errors";
 
 export function ImportsPage() {
   const queryClient = useQueryClient();
-  const [connectToken, setConnectToken] = useState<string | null>(null);
-  const [connectError, setConnectError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [accountId, setAccountId] = useState("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const connectionsQuery = useQuery({ queryKey: ["bank-connections"], queryFn: bankService.listConnections });
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [categoryChoices, setCategoryChoices] = useState<Record<number, string>>({});
+  const [titleChoices, setTitleChoices] = useState<Record<number, string>>({});
+  const [isBulkActing, setIsBulkActing] = useState(false);
+
+  const accountsQuery = useQuery({ queryKey: ["financial-accounts"], queryFn: transactionsService.listAccounts });
+  const historyQuery = useQuery({ queryKey: ["bank-import-history"], queryFn: bankService.listImportHistory });
   const importsQuery = useQuery({ queryKey: ["bank-imports"], queryFn: () => bankService.listPendingImports() });
   const incomeCategoriesQuery = useQuery({
     queryKey: ["categories", "INCOME"],
@@ -31,125 +39,263 @@ export function ImportsPage() {
     queryFn: () => categoriesService.list("EXPENSE"),
   });
 
-  const categories = useMemo(
-    () => [...(incomeCategoriesQuery.data ?? []), ...(expenseCategoriesQuery.data ?? [])],
-    [incomeCategoriesQuery.data, expenseCategoriesQuery.data],
-  );
+  const categories = [...(incomeCategoriesQuery.data ?? []), ...(expenseCategoriesQuery.data ?? [])];
+  const items = importsQuery.data?.results ?? [];
 
-  const handleConnectBank = async () => {
-    setConnectError(null);
+  // Preenche os mapas de categoria/descrição escolhidas com a sugestão
+  // automática assim que cada item chega, sem sobrescrever o que o usuário
+  // já tiver ajustado manualmente.
+  useEffect(() => {
+    setCategoryChoices((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const item of items) {
+        if (!(item.id in next)) {
+          next[item.id] = item.suggested_category ? String(item.suggested_category) : "";
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    setTitleChoices((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const item of items) {
+        if (!(item.id in next)) {
+          next[item.id] = item.description;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importsQuery.data]);
+
+  const invalidateImportQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["bank-imports"] });
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+  };
+
+  const allIds = items.map((item) => item.id);
+  const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
+  const selectedWithCategory = Array.from(selectedIds).filter((id) => categoryChoices[id]);
+
+  const toggleSelectAll = () => setSelectedIds(allSelected ? new Set() : new Set(allIds));
+  const toggleSelected = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkConfirm = async () => {
+    if (selectedWithCategory.length === 0) return;
+    setIsBulkActing(true);
     try {
-      const token = await bankService.createConnectToken();
-      setConnectToken(token);
-    } catch {
-      setConnectError(
-        "Não foi possível iniciar a conexão. Verifique se PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET estão configurados no backend (.env).",
+      await Promise.all(
+        selectedWithCategory.map((id) =>
+          bankService.confirmImport(id, { category: Number(categoryChoices[id]), title: titleChoices[id] || "" }),
+        ),
       );
+      setSelectedIds(new Set());
+      invalidateImportQueries();
+    } finally {
+      setIsBulkActing(false);
     }
   };
 
-  // NOTA: o formato exato do payload que `onSuccess` recebe não pôde ser
-  // confirmado na documentação pública da Pluggy no momento em que este
-  // código foi escrito — confira em https://docs.pluggy.ai quando tiver
-  // credenciais reais e ajuste a extração do itemId se necessário.
-  const handleWidgetSuccess = async (itemData: { item?: { id?: string }; itemId?: string; id?: string }) => {
-    const itemId = itemData?.item?.id ?? itemData?.itemId ?? itemData?.id;
-    setConnectToken(null);
-    if (!itemId) return;
-    await bankService.registerConnection(itemId);
-    queryClient.invalidateQueries({ queryKey: ["bank-connections"] });
-    queryClient.invalidateQueries({ queryKey: ["bank-imports"] });
+  const handleBulkIgnore = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkActing(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => bankService.ignoreImport(id)));
+      setSelectedIds(new Set());
+      invalidateImportQueries();
+    } finally {
+      setIsBulkActing(false);
+    }
   };
 
-  const handleSync = async (connectionId: number) => {
-    await bankService.syncConnection(connectionId);
-    queryClient.invalidateQueries({ queryKey: ["bank-connections"] });
-    queryClient.invalidateQueries({ queryKey: ["bank-imports"] });
+  const handleUpload = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setUploadError(null);
+    const file = fileInputRef.current?.files?.[0];
+    if (!accountId || !file) {
+      setUploadError("Selecione a conta e o arquivo.");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      await bankService.uploadStatement(Number(accountId), file);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      queryClient.invalidateQueries({ queryKey: ["bank-import-history"] });
+      queryClient.invalidateQueries({ queryKey: ["bank-imports"] });
+    } catch (error) {
+      setUploadError(extractErrorMessage(error, "Não foi possível importar esse arquivo."));
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Importações (Open Finance)</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Conecte seus bancos e organize cada movimentação importada com a categoria e descrição corretas.
-          </p>
-        </div>
-        <Button onClick={handleConnectBank}>+ Conectar banco</Button>
+      <div>
+        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Importar extrato</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Exporte o extrato do seu banco (OFX — a maioria dos bancos — ou CSV do PicPay) e envie aqui —
+          organize a categoria e descrição de cada movimentação antes dela virar uma transação real.
+        </p>
       </div>
 
-      {connectError && <p className="text-sm text-red-600">{connectError}</p>}
+      <Card>
+        <form onSubmit={handleUpload} className="flex flex-col gap-4 md:flex-row md:items-end">
+          <Select
+            label="Conta"
+            value={accountId}
+            onChange={(event) => setAccountId(event.target.value)}
+            className="md:w-56"
+          >
+            <option value="" disabled>
+              Selecione...
+            </option>
+            {accountsQuery.data?.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.name}
+              </option>
+            ))}
+          </Select>
+          <Input
+            ref={fileInputRef}
+            type="file"
+            accept=".ofx,.qfx,.csv"
+            label="Arquivo (OFX ou CSV)"
+            className="flex-1"
+          />
+          <Button type="submit" isLoading={isUploading}>
+            Importar
+          </Button>
+        </form>
+        {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
+        {(!accountsQuery.data || accountsQuery.data.length === 0) && !accountsQuery.isLoading && (
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Cadastre uma conta financeira antes de importar um extrato.
+          </p>
+        )}
+      </Card>
 
-      {connectionsQuery.data && connectionsQuery.data.length > 0 && (
-        <div className="flex flex-wrap gap-3">
-          {connectionsQuery.data.map((connection) => (
-            <Card key={connection.id} className="flex items-center gap-3">
-              <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {connection.institution_name || "Conexão bancária"}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Última sincronização:{" "}
-                  {connection.last_synced_at ? formatDate(connection.last_synced_at.slice(0, 10)) : "nunca"}
-                </p>
-              </div>
-              <Badge
-                tone={
-                  connection.status === "UPDATED"
-                    ? "success"
-                    : connection.status === "ERROR" || connection.status === "LOGIN_ERROR"
-                      ? "danger"
-                      : "warning"
-                }
-              >
-                {connection.status}
-              </Badge>
-              <Button variant="secondary" onClick={() => handleSync(connection.id)}>
-                Sincronizar
-              </Button>
-            </Card>
-          ))}
+      {historyQuery.data && historyQuery.data.length > 0 && (
+        <div>
+          <h2 className="mb-3 font-semibold text-slate-900 dark:text-slate-100">Importações recentes</h2>
+          <div className="flex flex-wrap gap-3">
+            {historyQuery.data.map((item) => (
+              <Card key={item.id} className="flex items-center gap-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {item.file_name || "extrato.ofx"} · {item.account_name}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {formatDate(item.imported_at.slice(0, 10))} · {item.transaction_count} lançamento(s)
+                  </p>
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
       <div>
-        <h2 className="mb-3 font-semibold text-slate-900 dark:text-slate-100">Aguardando revisão</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-semibold text-slate-900 dark:text-slate-100">
+            Aguardando revisão {items.length > 0 && `· ${items.length} movimentação(ões)`}
+          </h2>
+          {items.length > 0 && (
+            <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
+              Selecionar todas
+            </label>
+          )}
+        </div>
+
+        {selectedIds.size > 0 && (
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              {selectedIds.size} selecionada(s)
+              {selectedWithCategory.length < selectedIds.size &&
+                ` · ${selectedIds.size - selectedWithCategory.length} sem categoria`}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={handleBulkIgnore} isLoading={isBulkActing}>
+                Ignorar selecionadas
+              </Button>
+              <Button onClick={handleBulkConfirm} isLoading={isBulkActing} disabled={selectedWithCategory.length === 0}>
+                Confirmar {selectedWithCategory.length || ""} selecionada(s)
+              </Button>
+            </div>
+          </div>
+        )}
 
         {importsQuery.isLoading && <LoadingSpinner />}
 
-        {!importsQuery.isLoading && (!importsQuery.data || importsQuery.data.results.length === 0) && (
+        {!importsQuery.isLoading && items.length === 0 && (
           <EmptyState
             title="Nada para revisar"
-            description="Assim que novas movimentações forem importadas do seu banco, elas aparecem aqui para você confirmar a categoria."
+            description="Assim que você importar um extrato, as movimentações aparecem aqui para você confirmar a categoria."
           />
         )}
 
         <div className="flex flex-col gap-3">
-          {importsQuery.data?.results.map((item) => (
-            <ImportRow key={item.id} item={item} categories={categories} />
+          {items.map((item) => (
+            <ImportRow
+              key={item.id}
+              item={item}
+              categories={categories}
+              selected={selectedIds.has(item.id)}
+              onToggleSelect={() => toggleSelected(item.id)}
+              categoryId={categoryChoices[item.id] ?? ""}
+              onCategoryChange={(value) => setCategoryChoices((prev) => ({ ...prev, [item.id]: value }))}
+              title={titleChoices[item.id] ?? item.description}
+              onTitleChange={(value) => setTitleChoices((prev) => ({ ...prev, [item.id]: value }))}
+              onDone={invalidateImportQueries}
+            />
           ))}
         </div>
-      </div>
 
-      {connectToken && (
-        <PluggyConnect
-          connectToken={connectToken}
-          includeSandbox
-          onSuccess={handleWidgetSuccess}
-          onClose={() => setConnectToken(null)}
-        />
-      )}
+        {items.length > 0 && (
+          <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
+            Escolha uma categoria para liberar o botão Confirmar.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
 
-function ImportRow({ item, categories }: { item: ImportedTransaction; categories: Category[] }) {
-  const queryClient = useQueryClient();
-  const [categoryId, setCategoryId] = useState(item.suggested_category ? String(item.suggested_category) : "");
-  const [title, setTitle] = useState(item.description);
+function ImportRow({
+  item,
+  categories,
+  selected,
+  onToggleSelect,
+  categoryId,
+  onCategoryChange,
+  title,
+  onTitleChange,
+  onDone,
+}: {
+  item: ImportedTransaction;
+  categories: Category[];
+  selected: boolean;
+  onToggleSelect: () => void;
+  categoryId: string;
+  onCategoryChange: (value: string) => void;
+  title: string;
+  onTitleChange: (value: string) => void;
+  onDone: () => void;
+}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const isExpense = Number(item.amount) < 0;
 
   const handleConfirm = async () => {
@@ -157,9 +303,7 @@ function ImportRow({ item, categories }: { item: ImportedTransaction; categories
     setIsSubmitting(true);
     try {
       await bankService.confirmImport(item.id, { category: Number(categoryId), title });
-      queryClient.invalidateQueries({ queryKey: ["bank-imports"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      onDone();
     } finally {
       setIsSubmitting(false);
     }
@@ -167,11 +311,13 @@ function ImportRow({ item, categories }: { item: ImportedTransaction; categories
 
   const handleIgnore = async () => {
     await bankService.ignoreImport(item.id);
-    queryClient.invalidateQueries({ queryKey: ["bank-imports"] });
+    onDone();
   };
 
   return (
     <Card className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <input type="checkbox" checked={selected} onChange={onToggleSelect} className="md:mr-1" />
+
       <div className="md:w-40">
         <p className="text-xs text-slate-500 dark:text-slate-400">
           {formatDate(item.date)} · {item.account_name}
@@ -182,10 +328,10 @@ function ImportRow({ item, categories }: { item: ImportedTransaction; categories
       </div>
 
       <div className="flex flex-1 flex-col gap-2 md:flex-row">
-        <Input value={title} onChange={(event) => setTitle(event.target.value)} className="flex-1" />
-        <Select value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className="flex-1">
+        <Input value={title} onChange={(event) => onTitleChange(event.target.value)} className="flex-1" />
+        <Select value={categoryId} onChange={(event) => onCategoryChange(event.target.value)} className="flex-1">
           <option value="" disabled>
-            Categoria...
+            Escolher categoria
           </option>
           {categories
             .filter((category) => category.category_type === (isExpense ? "EXPENSE" : "INCOME"))
@@ -201,7 +347,7 @@ function ImportRow({ item, categories }: { item: ImportedTransaction; categories
         <Button variant="ghost" onClick={handleIgnore}>
           Ignorar
         </Button>
-        <Button onClick={handleConfirm} isLoading={isSubmitting} disabled={!categoryId}>
+        <Button onClick={handleConfirm} isLoading={isSubmitting} disabled={!categoryId} title={!categoryId ? "Escolha uma categoria para confirmar" : undefined}>
           Confirmar
         </Button>
       </div>

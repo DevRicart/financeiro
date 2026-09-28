@@ -3,27 +3,21 @@ from rest_framework import serializers
 from apps.categories.models import Category
 from apps.categories.serializers import CategorySerializer
 
-from .models import BankConnection, ImportedTransaction, SyncedAccount
+from .models import ImportedTransaction, StatementImport
 
 
-class SyncedAccountSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SyncedAccount
-        fields = ["id", "name", "account_type", "balance", "currency_code", "financial_account"]
-
-
-class BankConnectionSerializer(serializers.ModelSerializer):
-    accounts = SyncedAccountSerializer(many=True, read_only=True)
+class StatementImportSerializer(serializers.ModelSerializer):
+    account_name = serializers.CharField(source="account.name", read_only=True)
 
     class Meta:
-        model = BankConnection
-        fields = ["id", "institution_name", "status", "last_synced_at", "created_at", "accounts"]
-        read_only_fields = fields
+        model = StatementImport
+        fields = ["id", "account", "account_name", "file_name", "transaction_count", "imported_at"]
+        read_only_fields = ["id", "account_name", "transaction_count", "imported_at"]
 
 
 class ImportedTransactionSerializer(serializers.ModelSerializer):
     suggested_category_detail = CategorySerializer(source="suggested_category", read_only=True)
-    account_name = serializers.CharField(source="synced_account.name", read_only=True)
+    account_name = serializers.CharField(source="statement_import.account.name", read_only=True)
 
     class Meta:
         model = ImportedTransaction

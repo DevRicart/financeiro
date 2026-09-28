@@ -1,11 +1,13 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "../layouts/AppLayout";
 import { AuthLayout } from "../layouts/AuthLayout";
+import { AccountsPage } from "../pages/AccountsPage";
 import { BudgetsPage } from "../pages/BudgetsPage";
 import { ClientsPage } from "../pages/ClientsPage";
 import { CreditCardsPage } from "../pages/CreditCardsPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { DebtsPage } from "../pages/DebtsPage";
+import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
 import { GoalsPage } from "../pages/GoalsPage";
 import { ImportsPage } from "../pages/ImportsPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -14,6 +16,7 @@ import { ProfilePage } from "../pages/ProfilePage";
 import { RecurrencesPage } from "../pages/RecurrencesPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ReportsPage } from "../pages/ReportsPage";
+import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 import { TransactionFormPage } from "../pages/TransactionFormPage";
 import { TransactionsPage } from "../pages/TransactionsPage";
 import { ProtectedRoute } from "./protected-route";
@@ -26,6 +29,8 @@ export function AppRoutes() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>
       </Route>
 
@@ -34,6 +39,8 @@ export function AppRoutes() {
           <Route path="/app/dashboard" element={<DashboardPage />} />
           <Route path="/app/transactions" element={<TransactionsPage />} />
           <Route path="/app/transactions/new" element={<TransactionFormPage />} />
+          <Route path="/app/transactions/:id/edit" element={<TransactionFormPage />} />
+          <Route path="/app/accounts" element={<AccountsPage />} />
           <Route path="/app/credit-cards" element={<CreditCardsPage />} />
           <Route path="/app/recurrences" element={<RecurrencesPage />} />
           <Route path="/app/budgets" element={<BudgetsPage />} />

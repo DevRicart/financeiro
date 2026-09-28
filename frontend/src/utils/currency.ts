@@ -14,3 +14,12 @@ export function formatCurrency(value: number | string, currency = "BRL") {
 export function parseCurrencyInput(value: string): string {
   return value.replace(/\./g, "").replace(",", ".");
 }
+
+/**
+ * Inverse of parseCurrencyInput — converts the API's plain decimal string
+ * ("1234.56") into a pt-BR editable value ("1234,56"), for prefilling a form
+ * field the user might submit again untouched.
+ */
+export function formatCurrencyInput(value: string): string {
+  return value.replace(".", ",");
+}

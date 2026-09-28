@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, Heart, X } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -16,6 +17,12 @@ const STATUS_LABEL: Record<string, string> = {
   REJECTED: "Recusado",
   ENDED: "Encerrado",
 };
+
+const SHARED_ITEMS = [
+  { label: "Transações marcadas como compartilhadas", detail: "As demais continuam só suas.", shared: true },
+  { label: "Metas criadas com o parceiro", detail: "Os dois podem guardar dinheiro na mesma meta.", shared: true },
+  { label: "Saldos de contas e cartões", detail: "Nunca são mostrados para a outra pessoa.", shared: false },
+];
 
 export function PartnershipPage() {
   const { user } = useAuth();
@@ -48,19 +55,58 @@ export function PartnershipPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Parceiro</h1>
+      <div>
+        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Parceiro</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Divida a vida financeira com quem mora com você, sem abrir mão da sua privacidade.
+        </p>
+      </div>
 
-      <Card className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <Input
-          label="Convidar por e-mail"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="flex-1"
-        />
-        <Button onClick={handleInvite}>Enviar convite</Button>
-      </Card>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
+            <Heart size={18} />
+          </span>
+          <h2 className="mb-1 font-semibold text-slate-900 dark:text-slate-100">Convide seu parceiro</h2>
+          <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+            Enviaremos um link por e-mail. O vínculo só é criado quando a pessoa aceitar.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <Input
+              type="email"
+              placeholder="email@exemplo.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={handleInvite}>Enviar convite</Button>
+          </div>
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        </Card>
+
+        <Card>
+          <h2 className="mb-3 font-semibold text-slate-900 dark:text-slate-100">O que fica compartilhado</h2>
+          <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+            {SHARED_ITEMS.map((item) => (
+              <div key={item.label} className="flex gap-3 py-3 first:pt-0 last:pb-0">
+                <span
+                  className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${
+                    item.shared
+                      ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
+                      : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+                  }`}
+                >
+                  {item.shared ? <Check size={12} /> : <X size={12} />}
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{item.label}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{item.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
 
       {isLoading && <LoadingSpinner />}
       {!isLoading && (!partnerships || partnerships.length === 0) && (
@@ -70,42 +116,44 @@ export function PartnershipPage() {
         />
       )}
 
-      <div className="flex flex-col gap-3">
-        {partnerships?.map((partnership) => {
-          const isPendingForMe = partnership.status === "PENDING" && partnership.partner === user?.id;
-          const otherPersonEmail =
-            partnership.creator_email === user?.email ? partnership.partner_email : partnership.creator_email;
+      {partnerships && partnerships.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {partnerships.map((partnership) => {
+            const isPendingForMe = partnership.status === "PENDING" && partnership.partner === user?.id;
+            const otherPersonEmail =
+              partnership.creator_email === user?.email ? partnership.partner_email : partnership.creator_email;
 
-          return (
-            <Card key={partnership.id} className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-slate-900 dark:text-slate-100">{otherPersonEmail}</p>
-                <Badge
-                  tone={
-                    partnership.status === "ACTIVE"
-                      ? "success"
-                      : partnership.status === "REJECTED"
-                        ? "danger"
-                        : "warning"
-                  }
-                >
-                  {STATUS_LABEL[partnership.status]}
-                </Badge>
-              </div>
-              {isPendingForMe && (
-                <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => handleAccept(partnership.id)}>
-                    Aceitar
-                  </Button>
-                  <Button variant="ghost" onClick={() => handleReject(partnership.id)}>
-                    Recusar
-                  </Button>
+            return (
+              <Card key={partnership.id} className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{otherPersonEmail}</p>
+                  <Badge
+                    tone={
+                      partnership.status === "ACTIVE"
+                        ? "success"
+                        : partnership.status === "REJECTED"
+                          ? "danger"
+                          : "warning"
+                    }
+                  >
+                    {STATUS_LABEL[partnership.status]}
+                  </Badge>
                 </div>
-              )}
-            </Card>
-          );
-        })}
-      </div>
+                {isPendingForMe && (
+                  <div className="flex gap-2">
+                    <Button variant="secondary" onClick={() => handleAccept(partnership.id)}>
+                      Aceitar
+                    </Button>
+                    <Button variant="ghost" onClick={() => handleReject(partnership.id)}>
+                      Recusar
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

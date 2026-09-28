@@ -61,7 +61,7 @@ export function GoalsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Metas</h1>
+        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Metas</h1>
         <Button onClick={() => setModalOpen(true)}>+ Nova meta</Button>
       </div>
 
@@ -73,9 +73,15 @@ export function GoalsPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {goals?.map((goal) => (
           <Card key={goal.id}>
-            <h3 className="font-semibold text-slate-900 dark:text-slate-100">{goal.name}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {goal.goal_type === "SHARED" ? "Compartilhada" : "Individual"}
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{goal.name}</h3>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                {goal.goal_type === "SHARED" ? "Com parceiro" : "Individual"}
+              </span>
+            </div>
+            <p className="mt-2 font-serif text-3xl font-medium text-slate-900 dark:text-slate-100">
+              {formatCurrency(goal.current_amount)}
+              <span className="text-lg font-normal text-slate-400"> de {formatCurrency(goal.target_amount)}</span>
             </p>
             <div className="my-3 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
               <div
@@ -83,10 +89,7 @@ export function GoalsPage() {
                 style={{ width: `${Math.min(100, goal.progress_percentage)}%` }}
               />
             </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              {formatCurrency(goal.current_amount)} de {formatCurrency(goal.target_amount)} (
-              {goal.progress_percentage}%)
-            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{goal.progress_percentage}% concluído</p>
 
             {contributingGoalId === goal.id ? (
               <div className="mt-3 flex gap-2">
@@ -100,7 +103,7 @@ export function GoalsPage() {
               </div>
             ) : (
               <Button variant="secondary" className="mt-3 w-full" onClick={() => setContributingGoalId(goal.id)}>
-                Contribuir
+                + Guardar dinheiro
               </Button>
             )}
           </Card>

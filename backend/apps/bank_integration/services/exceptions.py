@@ -1,0 +1,2 @@
+class InvalidStatementFile(Exception):
+    pass

@@ -40,16 +40,17 @@ O usuário padrão da imagem Ubuntu da Oracle é `ubuntu` (não `root`, não `op
 icacls "caminho\para\sua-chave.key" /inheritance:r /grant:r "$($env:USERNAME):(R)"
 ```
 
-## 4. Ajustar o firewall da própria VM (a armadilha mais comum da Oracle)
+## 4. Abrir 80/443 no firewall da própria VM (a armadilha mais comum da Oracle)
 
-A imagem Ubuntu da Oracle já vem com regras de `iptables` pré-configuradas, bloqueando tudo exceto a porta 22 — isso é **além** da Security List do passo 2, e é o motivo nº1 de "abri a porta mas continua não funcionando" em VMs da Oracle. Antes de seguir com o firewall do [deployment.md](deployment.md) (que usa `ufw`), limpe as regras pré-existentes:
+A imagem Ubuntu da Oracle já vem com o `ufw` ativo, liberando por padrão só a porta 22 — isso é **além** da Security List do passo 2, e é o motivo nº1 de "abri a porta mas continua não funcionando" em VMs da Oracle. Para liberar 80/443:
 
 ```bash
-sudo iptables -F
-sudo netfilter-persistent save
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw status numbered
 ```
 
-Agora sim, siga o passo 1 do [deployment.md](deployment.md) normalmente (`ufw allow OpenSSH`, `ufw allow 80/tcp`, `ufw allow 443/tcp`, `ufw enable`).
+> **Nunca rode `sudo iptables -F`** nessa imagem para "resetar" o firewall. A chain `INPUT` vem com política `DROP` por padrão — um flush apaga inclusive a regra que libera sua própria conexão SSH, te trancando pra fora na hora (a conexão cai antes de dar tempo de desfazer). Se isso acontecer: reinicie a instância pelo **console da Oracle** (Compute → Instances → sua instância → **Reboot**) — se a mudança não chegou a ser salva com `netfilter-persistent save`, o reboot restaura as regras originais.
 
 ## 5. Continuar o deploy
 

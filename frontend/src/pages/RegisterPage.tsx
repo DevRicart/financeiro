@@ -25,7 +25,6 @@ export function RegisterPage() {
       await registerUser({
         preferred_name: data.preferred_name,
         email: data.email,
-        username: data.username,
         password: data.password,
       });
       navigate("/app/dashboard");
@@ -42,11 +41,17 @@ export function RegisterPage() {
     >
       <Input label="Nome" {...register("preferred_name")} error={errors.preferred_name?.message} />
       <Input label="E-mail" type="email" {...register("email")} error={errors.email?.message} />
-      <Input label="Usuário" {...register("username")} error={errors.username?.message} />
-      <Input label="Senha" type="password" {...register("password")} error={errors.password?.message} />
+      <Input
+        label="Senha"
+        type="password"
+        revealable
+        {...register("password")}
+        error={errors.password?.message}
+      />
       <Input
         label="Confirmar senha"
         type="password"
+        revealable
         {...register("confirm_password")}
         error={errors.confirm_password?.message}
       />

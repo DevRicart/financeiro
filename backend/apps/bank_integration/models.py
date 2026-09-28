@@ -2,50 +2,26 @@ from django.conf import settings
 from django.db import models
 
 
-class BankConnection(models.Model):
-    class Status(models.TextChoices):
-        UPDATING = "UPDATING", "Sincronizando"
-        UPDATED = "UPDATED", "Atualizado"
-        LOGIN_ERROR = "LOGIN_ERROR", "Erro de login"
-        OUTDATED = "OUTDATED", "Desatualizado"
-        ERROR = "ERROR", "Erro"
-
+class StatementImport(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="bank_connections",
+        related_name="statement_imports",
     )
-    pluggy_item_id = models.CharField(max_length=100, unique=True)
-    institution_name = models.CharField(max_length=150, blank=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.UPDATING)
-    last_synced_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.institution_name or self.pluggy_item_id} ({self.owner})"
-
-
-class SyncedAccount(models.Model):
-    connection = models.ForeignKey(
-        BankConnection, on_delete=models.CASCADE, related_name="accounts"
-    )
-    pluggy_account_id = models.CharField(max_length=100, unique=True)
-    financial_account = models.OneToOneField(
+    account = models.ForeignKey(
         "transactions.FinancialAccount",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="bank_sync",
+        on_delete=models.CASCADE,
+        related_name="statement_imports",
     )
-    name = models.CharField(max_length=150, blank=True)
-    account_type = models.CharField(max_length=50, blank=True)
-    balance = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-    currency_code = models.CharField(max_length=10, default="BRL")
-    raw_data = models.JSONField(default=dict, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    file_name = models.CharField(max_length=255, blank=True)
+    transaction_count = models.PositiveIntegerField(default=0)
+    imported_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-imported_at"]
 
     def __str__(self):
-        return self.name or self.pluggy_account_id
+        return f"{self.file_name or 'extrato'} ({self.account})"
 
 
 class ImportedTransaction(models.Model):
@@ -54,10 +30,11 @@ class ImportedTransaction(models.Model):
         CONFIRMED = "CONFIRMED", "Confirmada"
         IGNORED = "IGNORED", "Ignorada"
 
-    synced_account = models.ForeignKey(
-        SyncedAccount, on_delete=models.CASCADE, related_name="imported_transactions"
+    statement_import = models.ForeignKey(
+        StatementImport, on_delete=models.CASCADE, related_name="imported_transactions"
     )
-    pluggy_transaction_id = models.CharField(max_length=100, unique=True)
+    # FITID do OFX — só é garantido único dentro da mesma conta, nunca globalmente.
+    external_id = models.CharField(max_length=200, db_index=True)
 
     description = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=14, decimal_places=2)

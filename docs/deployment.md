@@ -47,8 +47,6 @@ Preencha com valores reais e diferentes dos de desenvolvimento:
 - `ALLOWED_HOSTS=SEU_IP` (o IP público da VPS, ex: `203.0.113.10`)
 - `CORS_ALLOWED_ORIGINS=http://SEU_IP`
 - `FRONTEND_URL=http://SEU_IP`
-- `PLUGGY_CLIENT_ID` / `PLUGGY_CLIENT_SECRET`: suas credenciais de produção da Pluggy
-- `PLUGGY_WEBHOOK_SECRET`: se a Pluggy oferecer assinatura de webhook, configure aqui
 - Descomente e deixe como `False` as três linhas `SECURE_SSL_REDIRECT` / `SESSION_COOKIE_SECURE` / `CSRF_COOKIE_SECURE` (já vêm comentadas no `.env.example`) — sem isso o Django tenta redirecionar tudo para HTTPS, que ainda não existe nesta fase, e a tela fica em branco/erro.
 
 Não precisa editar nada em `infrastructure/nginx/default.conf` — ele já aceita qualquer host (`server_name _;`), então funciona tanto por IP quanto, mais tarde, pelo domínio.
@@ -89,15 +87,7 @@ set -a && source .env && set +a
 ./infrastructure/scripts/restore.sh infrastructure/backups/daily/financeiro_20260101_030000.sql.gz
 ```
 
-## 7. Sincronizar bancos conectados periodicamente
-
-Como o projeto ainda não usa Celery, a sincronização com a Pluggy roda sob demanda (quando você abre o dashboard). Para também sincronizar em segundo plano:
-
-```bash
-(crontab -l 2>/dev/null; echo "0 */6 * * * cd /opt/financeiro && docker compose -f docker-compose.prod.yml exec -T backend python manage.py sync_bank_connections") | crontab -
-```
-
-## 8. Atualizando a aplicação (deploys seguintes)
+## 7. Atualizando a aplicação (deploys seguintes)
 
 ```bash
 cd /opt/financeiro
@@ -106,7 +96,7 @@ cd /opt/financeiro
 
 Isso faz `git pull`, reconstrói as imagens alteradas e sobe os containers novamente (migrações rodam automaticamente no start do backend).
 
-## 9. Iniciar tudo no boot da VPS (opcional)
+## 8. Iniciar tudo no boot da VPS (opcional)
 
 ```bash
 sudo cp infrastructure/systemd/financeiro.service /etc/systemd/system/

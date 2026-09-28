@@ -1,21 +1,15 @@
 from django.contrib import admin
 
-from .models import BankConnection, ImportedTransaction, SyncedAccount
+from .models import ImportedTransaction, StatementImport
 
 
-class SyncedAccountInline(admin.TabularInline):
-    model = SyncedAccount
-    extra = 0
-
-
-@admin.register(BankConnection)
-class BankConnectionAdmin(admin.ModelAdmin):
-    list_display = ["institution_name", "owner", "status", "last_synced_at"]
-    inlines = [SyncedAccountInline]
+@admin.register(StatementImport)
+class StatementImportAdmin(admin.ModelAdmin):
+    list_display = ["file_name", "account", "owner", "transaction_count", "imported_at"]
 
 
 @admin.register(ImportedTransaction)
 class ImportedTransactionAdmin(admin.ModelAdmin):
-    list_display = ["description", "amount", "date", "status", "synced_account"]
+    list_display = ["description", "amount", "date", "status", "statement_import"]
     list_filter = ["status"]
     search_fields = ["description"]

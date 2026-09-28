@@ -1,91 +1,59 @@
 from django.db import transaction as db_transaction
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.transactions.models import Transaction, TransactionSettlement
+from apps.transactions.models import FinancialAccount, Transaction, TransactionSettlement
 from apps.transactions.services import add_settlement
 
-from .models import BankConnection, ImportedTransaction
+from .models import ImportedTransaction, StatementImport
 from .serializers import (
-    BankConnectionSerializer,
     ImportedTransactionConfirmSerializer,
     ImportedTransactionSerializer,
+    StatementImportSerializer,
 )
-from .services.pluggy_client import pluggy_client, pluggy_error_handling
-from .services.sync import sync_bank_connection
+from .services.exceptions import InvalidStatementFile
+from .services.statement_import import import_statement
 
 
-class ConnectTokenView(APIView):
-    """Returns a short-lived token for the frontend's Pluggy Connect widget.
-
-    Pass `item_id` to reopen the widget in "update" mode for an existing
-    connection (e.g. after a LOGIN_ERROR); omit it to start a new one.
-    """
-
+class StatementImportView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     def post(self, request):
-        item_id = request.data.get("item_id")
-        connection = None
-        if item_id:
-            connection = BankConnection.objects.filter(
-                owner=request.user, pluggy_item_id=item_id
-            ).first()
-        with pluggy_error_handling():
-            token = pluggy_client.create_connect_token(
-                item_id=connection.pluggy_item_id if connection else None
+        uploaded_file = request.FILES.get("file")
+        account_id = request.data.get("account")
+        if not uploaded_file or not account_id:
+            return Response(
+                {"detail": "Envie a conta ('account') e o arquivo ('file')."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        return Response({"access_token": token})
 
+        account = FinancialAccount.objects.filter(id=account_id, owner=request.user).first()
+        if not account:
+            return Response({"detail": "Conta inválida."}, status=status.HTTP_400_BAD_REQUEST)
 
-class BankConnectionViewSet(viewsets.ModelViewSet):
-    serializer_class = BankConnectionSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    http_method_names = ["get", "post", "delete"]
-    pagination_class = None
-
-    def get_queryset(self):
-        return BankConnection.objects.filter(owner=self.request.user).prefetch_related("accounts")
-
-    def create(self, request, *args, **kwargs):
-        item_id = request.data.get("item_id")
-        if not item_id:
-            return Response({"detail": "item_id é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
-
-        with pluggy_error_handling():
-            item_data = pluggy_client.get_item(item_id)
-            connection, _ = BankConnection.objects.update_or_create(
-                pluggy_item_id=item_id,
-                defaults={
-                    "owner": request.user,
-                    "institution_name": (item_data.get("connector") or {}).get("name", ""),
-                },
+        try:
+            statement_import = import_statement(
+                owner=request.user,
+                account=account,
+                file_name=uploaded_file.name,
+                file_obj=uploaded_file,
             )
-            sync_bank_connection(connection)
-        return Response(BankConnectionSerializer(connection).data, status=status.HTTP_201_CREATED)
+        except InvalidStatementFile as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=["post"])
-    def sync(self, request, pk=None):
-        connection = self.get_object()
-        with pluggy_error_handling():
-            sync_bank_connection(connection)
-        return Response(BankConnectionSerializer(connection).data)
+        return Response(StatementImportSerializer(statement_import).data, status=status.HTTP_201_CREATED)
 
 
-class SyncAllConnectionsView(APIView):
-    """Meant to be called once when the user opens the app, so every
-    connected bank is refreshed before they see the review queue."""
-
+class StatementImportListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
-        connections = BankConnection.objects.filter(owner=request.user)
-        with pluggy_error_handling():
-            for connection in connections:
-                sync_bank_connection(connection)
-        return Response(BankConnectionSerializer(connections, many=True).data)
+    def get(self, request):
+        imports = StatementImport.objects.filter(owner=request.user).select_related("account")
+        return Response(StatementImportSerializer(imports, many=True).data)
 
 
 class ImportedTransactionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -95,8 +63,8 @@ class ImportedTransactionViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return ImportedTransaction.objects.filter(
-            synced_account__connection__owner=self.request.user
-        ).select_related("synced_account", "suggested_category")
+            statement_import__owner=self.request.user
+        ).select_related("statement_import__account", "suggested_category")
 
     @action(detail=True, methods=["post"])
     def confirm(self, request, pk=None):
@@ -130,8 +98,8 @@ class ImportedTransactionViewSet(viewsets.ReadOnlyModelViewSet):
                     "amount": abs(imported.amount),
                     "settlement_date": imported.date,
                     "payment_method": TransactionSettlement.PaymentMethod.BANK_TRANSFER,
-                    "account": imported.synced_account.financial_account,
-                    "notes": "Importado automaticamente via Open Finance.",
+                    "account": imported.statement_import.account,
+                    "notes": "Importado de extrato bancário (OFX).",
                 },
             )
             imported.status = ImportedTransaction.Status.CONFIRMED
@@ -146,19 +114,3 @@ class ImportedTransactionViewSet(viewsets.ReadOnlyModelViewSet):
         imported.status = ImportedTransaction.Status.IGNORED
         imported.save(update_fields=["status"])
         return Response(ImportedTransactionSerializer(imported).data)
-
-
-class PluggyWebhookView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request):
-        event = request.data.get("event")
-        item_id = request.data.get("itemId")
-
-        if event in ("item/updated", "transactions/created") and item_id:
-            connection = BankConnection.objects.filter(pluggy_item_id=item_id).first()
-            if connection:
-                with pluggy_error_handling():
-                    sync_bank_connection(connection)
-
-        return Response(status=status.HTTP_200_OK)

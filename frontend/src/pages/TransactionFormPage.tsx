@@ -1,8 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
@@ -11,7 +11,7 @@ import { categoriesService } from "../services/categories.service";
 import { clientsService } from "../services/clients.service";
 import { creditCardsService } from "../services/credit-cards.service";
 import { transactionsService, type TransactionPayload } from "../services/transactions.service";
-import { parseCurrencyInput } from "../utils/currency";
+import { formatCurrencyInput, parseCurrencyInput } from "../utils/currency";
 import { todayValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
 
@@ -27,14 +27,23 @@ const INCOME_TYPE_LABEL: Record<string, string> = {
 };
 
 export function TransactionFormPage() {
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = Boolean(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const transactionQuery = useQuery({
+    queryKey: ["transaction", id],
+    queryFn: () => transactionsService.get(Number(id)),
+    enabled: isEditMode,
+  });
 
   const {
     register,
     handleSubmit,
     watch,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -44,6 +53,37 @@ export function TransactionFormPage() {
       is_shared: false,
     },
   });
+
+  useEffect(() => {
+    const transaction = transactionQuery.data;
+    if (!transaction) return;
+
+    reset({
+      transaction_type: transaction.transaction_type,
+      category: transaction.category,
+      title: transaction.title,
+      description: transaction.description,
+      total_amount: formatCurrencyInput(transaction.total_amount),
+      competence_date: transaction.competence_date,
+      due_date: transaction.due_date ?? "",
+      is_shared: transaction.is_shared,
+      income_type: transaction.income_type ?? "",
+      salary_employer_name: transaction.salary_detail?.employer_name ?? "",
+      salary_net_amount: transaction.salary_detail ? formatCurrencyInput(transaction.salary_detail.net_amount) : "",
+      salary_reference_month: transaction.salary_detail?.reference_month ?? "",
+      service_client: transaction.service_detail?.client ?? undefined,
+      service_date: transaction.service_detail?.service_date ?? "",
+      service_type: transaction.service_detail?.service_type ?? "",
+      service_duration_minutes:
+        transaction.service_detail?.duration_minutes != null
+          ? String(transaction.service_detail.duration_minutes)
+          : "",
+      freelance_client: transaction.freelance_detail?.client ?? undefined,
+      freelance_project_name: transaction.freelance_detail?.project_name ?? "",
+      freelance_start_date: transaction.freelance_detail?.start_date ?? "",
+      freelance_delivery_date: transaction.freelance_detail?.delivery_date ?? "",
+    });
+  }, [transactionQuery.data, reset]);
 
   const transactionType = watch("transaction_type");
   const incomeType = watch("income_type");
@@ -56,7 +96,7 @@ export function TransactionFormPage() {
   const { data: creditCards } = useQuery({
     queryKey: ["credit-cards"],
     queryFn: creditCardsService.list,
-    enabled: transactionType === "EXPENSE",
+    enabled: transactionType === "EXPENSE" && !isEditMode,
   });
 
   const { data: clients } = useQuery({
@@ -110,11 +150,16 @@ export function TransactionFormPage() {
         }
       }
 
-      if (data.transaction_type === "EXPENSE" && data.credit_card) {
+      if (!isEditMode && data.transaction_type === "EXPENSE" && data.credit_card) {
         payload.credit_card = data.credit_card;
       }
 
-      await transactionsService.create(payload);
+      if (isEditMode) {
+        await transactionsService.update(Number(id), payload);
+        queryClient.invalidateQueries({ queryKey: ["transaction", id] });
+      } else {
+        await transactionsService.create(payload);
+      }
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
       navigate("/app/transactions");
@@ -125,7 +170,9 @@ export function TransactionFormPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="mb-6 text-2xl font-bold text-slate-900 dark:text-slate-100">Nova transação</h1>
+      <h1 className="mb-6 text-3xl font-semibold text-slate-900 dark:text-slate-100">
+        {isEditMode ? "Editar transação" : "Nova transação"}
+      </h1>
       <form
         onSubmit={handleSubmit(onSubmit)}
         noValidate
@@ -163,7 +210,7 @@ export function TransactionFormPage() {
         />
         <Input label="Data de vencimento (opcional)" type="date" {...register("due_date")} />
 
-        {transactionType === "EXPENSE" && (
+        {transactionType === "EXPENSE" && !isEditMode && (
           <Select label="Cartão de crédito (opcional)" {...register("credit_card")} defaultValue="">
             <option value="">Nenhum — pagamento à vista</option>
             {creditCards?.map((card) => (

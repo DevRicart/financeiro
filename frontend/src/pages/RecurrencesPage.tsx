@@ -1,8 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Input } from "../components/ui/Input";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
@@ -10,7 +9,7 @@ import { Modal } from "../components/ui/Modal";
 import { Select } from "../components/ui/Select";
 import { categoriesService } from "../services/categories.service";
 import { recurrencesService } from "../services/recurrences.service";
-import type { RecurrenceFrequency, TransactionType } from "../types/transaction";
+import type { RecurrenceFrequency, RecurrenceRule, TransactionType } from "../types/transaction";
 import { formatCurrency, parseCurrencyInput } from "../utils/currency";
 import { todayValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
@@ -20,6 +19,12 @@ const FREQUENCY_LABEL: Record<RecurrenceFrequency, string> = {
   MONTHLY: "Mensal",
   YEARLY: "Anual",
 };
+
+function frequencyDetail(rule: RecurrenceRule) {
+  const day = Number(rule.start_date.split("-")[2]);
+  if (rule.frequency === "MONTHLY") return `Mensal, todo dia ${day}`;
+  return FREQUENCY_LABEL[rule.frequency];
+}
 
 export function RecurrencesPage() {
   const queryClient = useQueryClient();
@@ -37,10 +42,28 @@ export function RecurrencesPage() {
   });
 
   const { data: rules, isLoading } = useQuery({ queryKey: ["recurrences"], queryFn: recurrencesService.list });
-  const { data: categories } = useQuery({
+  const { data: formCategories } = useQuery({
     queryKey: ["categories", form.transaction_type],
     queryFn: () => categoriesService.list(form.transaction_type),
   });
+  const { data: incomeCategories } = useQuery({
+    queryKey: ["categories", "INCOME"],
+    queryFn: () => categoriesService.list("INCOME"),
+  });
+  const { data: expenseCategories } = useQuery({
+    queryKey: ["categories", "EXPENSE"],
+    queryFn: () => categoriesService.list("EXPENSE"),
+  });
+  const allCategories = [...(incomeCategories ?? []), ...(expenseCategories ?? [])];
+
+  const activeRules = rules?.filter((rule) => rule.is_active) ?? [];
+  const monthlyIn = activeRules
+    .filter((rule) => rule.transaction_type === "INCOME")
+    .reduce((sum, rule) => sum + Number(rule.amount), 0);
+  const monthlyOut = activeRules
+    .filter((rule) => rule.transaction_type === "EXPENSE")
+    .reduce((sum, rule) => sum + Number(rule.amount), 0);
+  const pausedCount = (rules?.length ?? 0) - activeRules.length;
 
   const handleCreate = async () => {
     if (!form.title || !form.amount || !form.category) return;
@@ -84,55 +107,109 @@ export function RecurrencesPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Recorrências</h1>
+          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Recorrências</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Salário, aluguel, assinaturas — lançamentos que se repetem automaticamente.
+            Salário, aluguel e assinaturas: lançamentos que se repetem sozinhos.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleGenerateNow}>
-            Gerar pendentes agora
+          <Button variant="secondary" className="gap-1.5" onClick={handleGenerateNow}>
+            <RefreshCw size={14} />
+            Gerar lançamentos pendentes
           </Button>
           <Button onClick={() => setModalOpen(true)}>+ Nova recorrência</Button>
         </div>
       </div>
+
+      {rules && rules.length > 0 && (
+        <div className="flex gap-10">
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Entra por mês</p>
+            <p className="font-serif text-3xl font-medium text-green-700">{formatCurrency(monthlyIn)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Sai por mês</p>
+            <p className="font-serif text-3xl font-medium text-red-600">{formatCurrency(monthlyOut)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Pausadas</p>
+            <p className="font-serif text-3xl font-medium text-slate-900 dark:text-slate-100">{pausedCount}</p>
+          </div>
+        </div>
+      )}
 
       {isLoading && <LoadingSpinner />}
       {!isLoading && (!rules || rules.length === 0) && (
         <EmptyState title="Nenhuma recorrência cadastrada" description="Cadastre despesas ou receitas fixas." />
       )}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {rules?.map((rule) => (
-          <Card key={rule.id}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-medium text-slate-900 dark:text-slate-100">{rule.title}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {FREQUENCY_LABEL[rule.frequency]} · desde {rule.start_date}
-                </p>
-              </div>
-              <Badge tone={rule.is_active ? "success" : "neutral"}>{rule.is_active ? "Ativa" : "Pausada"}</Badge>
-            </div>
-            <p
-              className={`mt-2 text-lg font-semibold ${rule.transaction_type === "EXPENSE" ? "text-red-600" : "text-green-600"}`}
-            >
-              {formatCurrency(rule.amount)}
-            </p>
-            <div className="mt-3 flex gap-2">
-              <Button variant="secondary" onClick={() => handleToggleActive(rule.id, rule.is_active)}>
-                {rule.is_active ? "Pausar" : "Reativar"}
-              </Button>
-              <Button variant="ghost" onClick={() => handleRemove(rule.id)}>
-                Remover
-              </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
+      {rules && rules.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              <tr>
+                <th className="px-4 py-3">Nome</th>
+                <th className="px-4 py-3">Frequência</th>
+                <th className="px-4 py-3">Valor</th>
+                <th className="px-4 py-3">Ativa</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {rules.map((rule) => (
+                <tr key={rule.id}>
+                  <td className="px-4 py-3">
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{rule.title}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {allCategories.find((category) => category.id === rule.category)?.name ?? ""}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{frequencyDetail(rule)}</td>
+                  <td
+                    className={`px-4 py-3 font-medium ${rule.transaction_type === "EXPENSE" ? "text-red-600" : "text-green-700"}`}
+                  >
+                    {rule.transaction_type === "EXPENSE" ? "-" : "+"}
+                    {formatCurrency(rule.amount)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={rule.is_active}
+                      onClick={() => handleToggleActive(rule.id, rule.is_active)}
+                      className={`relative h-6 w-11 rounded-full transition-colors ${
+                        rule.is_active ? "bg-slate-800 dark:bg-slate-100" : "bg-slate-200 dark:bg-slate-700"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform dark:bg-slate-900 ${
+                          rule.is_active ? "translate-x-5" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(rule.id)}
+                        aria-label="Remover"
+                        title="Remover"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950 dark:hover:text-red-400"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <Modal title="Nova recorrência" isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
         <div className="flex flex-col gap-4">
@@ -149,7 +226,7 @@ export function RecurrencesPage() {
             <option value="" disabled>
               Selecione...
             </option>
-            {categories?.map((category) => (
+            {formCategories?.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.icon} {category.name}
               </option>

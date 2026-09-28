@@ -40,6 +40,11 @@ export const transactionsService = {
     return data;
   },
 
+  async get(id: number) {
+    const { data } = await api.get<Transaction>(`/transactions/${id}/`);
+    return data;
+  },
+
   async create(payload: TransactionPayload) {
     const { data } = await api.post<Transaction>("/transactions/", payload);
     return data;
@@ -69,5 +74,19 @@ export const transactionsService = {
   async listAccounts() {
     const { data } = await api.get<FinancialAccount[]>("/financial-accounts/");
     return data;
+  },
+
+  async createAccount(payload: {
+    name: string;
+    institution?: string;
+    account_type: string;
+    initial_balance?: string;
+  }) {
+    const { data } = await api.post<FinancialAccount>("/financial-accounts/", payload);
+    return data;
+  },
+
+  async removeAccount(accountId: number) {
+    await api.delete(`/financial-accounts/${accountId}/`);
   },
 };

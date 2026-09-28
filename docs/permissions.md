@@ -28,7 +28,7 @@ O modelo implementado (`apps/couples`) segue o que o documento original pedia: *
 Seguindo a mesma lista do documento original:
 
 - prontuários, diagnósticos ou qualquer informação clínica (o campo `service_type` de atendimentos, quando implementado, deve continuar sendo um texto livre curto, nunca um histórico)
-- senhas de bancos, números completos de cartão, código de segurança, tokens bancários — a integração Pluggy nunca expõe isso à aplicação; o widget de conexão roda inteiramente no navegador do usuário, direto com a Pluggy
+- senhas de bancos, números completos de cartão, código de segurança, tokens bancários — a importação de extrato é um arquivo OFX exportado pelo próprio usuário (contém só as movimentações), nunca há credenciais bancárias envolvidas nem um terceiro com acesso à conta
 
 ## Segurança já aplicada
 

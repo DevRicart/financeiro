@@ -6,14 +6,29 @@ import { z } from "zod";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
+import { Select } from "../components/ui/Select";
 import { useAuth } from "../hooks/useAuth";
 import { authService } from "../services/auth.service";
 import { extractErrorMessage } from "../utils/errors";
 
+const CURRENCY_OPTIONS = [
+  { value: "BRL", label: "Real brasileiro (R$)" },
+  { value: "USD", label: "Dólar americano (US$)" },
+  { value: "EUR", label: "Euro (€)" },
+];
+
+const TIMEZONE_OPTIONS = [
+  { value: "America/Sao_Paulo", label: "Brasília (GMT-3)" },
+  { value: "America/Manaus", label: "Manaus (GMT-4)" },
+  { value: "America/Rio_Branco", label: "Rio Branco (GMT-5)" },
+  { value: "America/Noronha", label: "Fernando de Noronha (GMT-2)" },
+  { value: "UTC", label: "UTC" },
+];
+
 const profileSchema = z.object({
   preferred_name: z.string().min(1, "Informe seu nome"),
-  currency: z.string().min(3, "Use o código de 3 letras (ex: BRL)").max(3),
-  timezone: z.string().min(1, "Informe o fuso horário"),
+  currency: z.string().min(1, "Escolha a moeda"),
+  timezone: z.string().min(1, "Escolha o fuso horário"),
 });
 type ProfileFormData = z.infer<typeof profileSchema>;
 
@@ -69,13 +84,25 @@ export function ProfilePage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
       <div>
-        <h1 className="mb-6 text-2xl font-bold text-slate-900 dark:text-slate-100">Perfil</h1>
+        <h1 className="mb-6 text-3xl font-semibold text-slate-900 dark:text-slate-100">Perfil</h1>
         <Card>
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
             <Input label="E-mail" value={user?.email ?? ""} disabled />
             <Input label="Nome" {...register("preferred_name")} error={errors.preferred_name?.message} />
-            <Input label="Moeda" {...register("currency")} error={errors.currency?.message} />
-            <Input label="Fuso horário" {...register("timezone")} error={errors.timezone?.message} />
+            <Select label="Moeda" {...register("currency")} error={errors.currency?.message}>
+              {CURRENCY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+            <Select label="Fuso horário" {...register("timezone")} error={errors.timezone?.message}>
+              {TIMEZONE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
             {message && <p className="text-sm text-green-600">{message}</p>}
             {error && <p className="text-sm text-red-600">{error}</p>}
             <Button type="submit" isLoading={isSubmitting}>

@@ -132,11 +132,5 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@financeiro.loca
 
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")
 
-# Open Finance (Pluggy) — see apps.bank_integration
-PLUGGY_CLIENT_ID = env("PLUGGY_CLIENT_ID", default="")
-PLUGGY_CLIENT_SECRET = env("PLUGGY_CLIENT_SECRET", default="")
-PLUGGY_BASE_URL = env("PLUGGY_BASE_URL", default="https://api.pluggy.ai")
-PLUGGY_WEBHOOK_SECRET = env("PLUGGY_WEBHOOK_SECRET", default="")
-
-DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB, guards file upload endpoints
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB, guards file upload endpoints (ex: importação de extrato OFX)
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

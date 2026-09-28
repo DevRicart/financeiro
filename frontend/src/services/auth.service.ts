@@ -8,12 +8,7 @@ export const authService = {
     return data.user;
   },
 
-  async register(payload: {
-    email: string;
-    username: string;
-    password: string;
-    preferred_name?: string;
-  }) {
+  async register(payload: { email: string; password: string; preferred_name?: string }) {
     const { data } = await api.post<LoginResponse>("/auth/register/", payload);
     tokenStorage.setTokens(data.access, data.refresh);
     return data.user;
@@ -27,6 +22,14 @@ export const authService = {
   async updateMe(payload: Partial<Pick<User, "preferred_name" | "currency" | "timezone">>) {
     const { data } = await api.patch<User>("/auth/me/", payload);
     return data;
+  },
+
+  async requestPasswordReset(email: string) {
+    await api.post("/auth/password-reset/", { email });
+  },
+
+  async confirmPasswordReset(payload: { uid: string; token: string; new_password: string }) {
+    await api.post("/auth/password-reset/confirm/", payload);
   },
 
   async logout() {

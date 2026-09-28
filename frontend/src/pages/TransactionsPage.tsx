@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -52,6 +53,8 @@ export function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<TransactionType | "">("");
   const [isInstallmentModalOpen, setInstallmentModalOpen] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["transactions", typeFilter],
@@ -73,6 +76,26 @@ export function TransactionsPage() {
     defaultValues: { first_due_date: todayValue() },
   });
 
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [typeFilter]);
+
+  const allVisibleIds = data?.results.map((transaction) => transaction.id) ?? [];
+  const allSelected = allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedIds.has(id));
+
+  const toggleSelectAll = () => {
+    setSelectedIds(allSelected ? new Set() : new Set(allVisibleIds));
+  };
+
+  const toggleSelected = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const handleQuickSettle = async (transaction: Transaction) => {
     await transactionsService.addSettlement(transaction.id, {
       amount: transaction.remaining_amount,
@@ -88,6 +111,21 @@ export function TransactionsPage() {
     await transactionsService.remove(transaction.id);
     queryClient.invalidateQueries({ queryKey: ["transactions"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Excluir ${selectedIds.size} transação(ões) selecionada(s)? Essa ação não pode ser desfeita.`)) return;
+
+    setIsBulkDeleting(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => transactionsService.remove(id)));
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+    } finally {
+      setIsBulkDeleting(false);
+    }
   };
 
   const onCreateInstallmentPlan = async (data: InstallmentFormData) => {
@@ -112,7 +150,7 @@ export function TransactionsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Transações</h1>
+        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Transações</h1>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => setInstallmentModalOpen(true)}>
             Parcelar despesa
@@ -133,6 +171,17 @@ export function TransactionsPage() {
         <option value="EXPENSE">Despesas</option>
       </Select>
 
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
+          <span className="text-sm text-slate-600 dark:text-slate-400">
+            {selectedIds.size} transação(ões) selecionada(s)
+          </span>
+          <Button variant="danger" onClick={handleBulkDelete} isLoading={isBulkDeleting}>
+            Excluir selecionadas
+          </Button>
+        </div>
+      )}
+
       {isLoading && <LoadingSpinner />}
 
       {!isLoading && (!data || data.results.length === 0) && (
@@ -144,6 +193,9 @@ export function TransactionsPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
               <tr>
+                <th className="px-4 py-3">
+                  <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} aria-label="Selecionar todas" />
+                </th>
                 <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3">Descrição</th>
                 <th className="px-4 py-3">Categoria</th>
@@ -155,6 +207,14 @@ export function TransactionsPage() {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {data.results.map((transaction) => (
                 <tr key={transaction.id}>
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(transaction.id)}
+                      onChange={() => toggleSelected(transaction.id)}
+                      aria-label={`Selecionar ${transaction.title}`}
+                    />
+                  </td>
                   <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
                     {formatDate(transaction.competence_date)}
                   </td>
@@ -181,15 +241,30 @@ export function TransactionsPage() {
                     <Badge tone={STATUS_TONE[transaction.status]}>{STATUS_LABEL[transaction.status]}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       {transaction.status !== "COMPLETED" && transaction.status !== "CANCELLED" && (
-                        <Button variant="secondary" onClick={() => handleQuickSettle(transaction)}>
-                          Marcar pago
+                        <Button variant="secondary" className="gap-1.5" onClick={() => handleQuickSettle(transaction)}>
+                          <CheckCircle2 size={14} />
+                          {transaction.transaction_type === "INCOME" ? "Marcar como recebida" : "Marcar como paga"}
                         </Button>
                       )}
-                      <Button variant="ghost" onClick={() => handleDelete(transaction)}>
-                        Excluir
-                      </Button>
+                      <Link
+                        to={`/app/transactions/${transaction.id}/edit`}
+                        aria-label="Editar"
+                        title="Editar"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                      >
+                        <Pencil size={16} />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(transaction)}
+                        aria-label="Excluir"
+                        title="Excluir"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950 dark:hover:text-red-400"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </td>
                 </tr>

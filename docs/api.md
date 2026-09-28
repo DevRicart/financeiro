@@ -112,20 +112,17 @@ Todos aceitam `?month=YYYY-MM` (padrão: mês atual), exceto o de evolução.
 
 `couple-summary` retorna os totais do usuário (`own`), um total combinado (`combined`) e, para cada vínculo **ativo**, um item em `partners` só com os campos que aquela `PartnershipPermission` libera (`shares_income_totals`, `shares_expense_totals`, `shares_goals`, `shares_debts` indicam o que veio — o campo correspondente, ex. `income_total`, some do JSON quando não compartilhado). `combined` soma apenas os valores que foram de fato compartilhados.
 
-## Open Finance (Pluggy)
+## Importação de extrato (OFX ou CSV)
 
 | Método | Rota | Descrição |
 |---|---|---|
-| POST | `/bank/connect-token/` | `{item_id?}` — gera o token para abrir o widget da Pluggy |
-| GET/POST | `/bank/connections/` | Lista conexões / registra uma nova após o widget retornar um `item_id` |
-| POST | `/bank/connections/{id}/sync/` | Sincroniza uma conexão específica agora |
-| POST | `/bank/sync-all/` | Sincroniza todas as conexões do usuário (chamado ao abrir o dashboard) |
+| POST | `/bank/statements/` | Multipart: `{account, file}` — importa um extrato para a conta indicada; formato (`.ofx`/`.qfx`/`.csv`) detectado pela extensão |
+| GET | `/bank/statements/history/` | Histórico de importações do usuário |
 | GET | `/bank/imports/?status=PENDING_REVIEW` | Fila de revisão (paginado) |
 | POST | `/bank/imports/{id}/confirm/` | `{category, title, description?, is_shared?}` — vira uma `Transaction` real |
 | POST | `/bank/imports/{id}/ignore/` | Marca como ignorada |
-| POST | `/bank/webhook/` | Endpoint público — configure na Pluggy para sincronizar automaticamente em eventos |
 
-Se `PLUGGY_CLIENT_ID`/`PLUGGY_CLIENT_SECRET` não estiverem configurados, as rotas acima retornam `503` com uma mensagem explicando o que falta — não um erro genérico.
+Uma extensão não suportada, ou um arquivo que não corresponde ao formato esperado (ex: CSV com colunas diferentes do PicPay), retorna `400` com uma mensagem explicando o problema, em vez de um erro genérico. Formatos hoje suportados: OFX (qualquer banco) e CSV (só PicPay, por enquanto — veja `services/parsers/` para adicionar outro).
 
 ## Relatórios
 

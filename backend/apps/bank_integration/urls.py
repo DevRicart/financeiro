@@ -4,11 +4,9 @@ from rest_framework.routers import DefaultRouter
 from . import views
 
 router = DefaultRouter()
-router.register("connections", views.BankConnectionViewSet, basename="bank-connection")
 router.register("imports", views.ImportedTransactionViewSet, basename="bank-import")
 
 urlpatterns = [
-    path("connect-token/", views.ConnectTokenView.as_view(), name="bank-connect-token"),
-    path("sync-all/", views.SyncAllConnectionsView.as_view(), name="bank-sync-all"),
-    path("webhook/", views.PluggyWebhookView.as_view(), name="bank-webhook"),
+    path("statements/", views.StatementImportView.as_view(), name="bank-statement-import"),
+    path("statements/history/", views.StatementImportListView.as_view(), name="bank-statement-history"),
 ] + router.urls

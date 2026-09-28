@@ -37,9 +37,8 @@ Todo valor monetário usa `DecimalField` (nunca `float`), para evitar erros de a
 - `budgets_monthlybudget` — limite de gasto por categoria/mês, com `alert_percentage`; único por `(owner, category, month)`
 
 **bank_integration**
-- `bank_integration_bankconnection` — uma conexão com um banco via Pluggy (`pluggy_item_id`)
-- `bank_integration_syncedaccount` — cada conta bancária trazida pela Pluggy, espelhada em uma `FinancialAccount`
-- `bank_integration_importedtransaction` — fila de revisão: toda transação vinda do banco, até ser confirmada (vira uma `Transaction` real) ou ignorada
+- `bank_integration_statementimport` — um lote de importação (um arquivo OFX enviado, para uma `FinancialAccount`)
+- `bank_integration_importedtransaction` — fila de revisão: toda transação lida do extrato (`external_id` identifica a transação na origem — o `FITID` no OFX, um hash das colunas da linha no CSV — único por conta), até ser confirmada (vira uma `Transaction` real) ou ignorada
 
 **reports** e **notifications** não têm tabelas próprias (`reports` só lê/exporta dados existentes; `notifications` ainda é um esqueleto vazio).
 
@@ -52,18 +51,17 @@ User
  ├── FinancialAccount (owner)
  ├── FinancialGoal (owner) / GoalContribution (user)
  ├── Debt (owner)
- ├── BankConnection (owner)
+ ├── StatementImport (owner)
  └── Partnership (creator ou partner)
 
 Transaction
  ├── Category (obrigatório, PROTECT — não dá pra apagar uma categoria em uso)
  └── TransactionSettlement[] (related_name="settlements")
 
-BankConnection
- └── SyncedAccount[]
-       ├── FinancialAccount (criada automaticamente na primeira sincronização)
-       └── ImportedTransaction[] (related_name="imported_transactions")
-             └── resulting_transaction → Transaction (preenchido só após confirmação)
+StatementImport
+ ├── FinancialAccount (account — escolhida pelo usuário ao enviar o extrato)
+ └── ImportedTransaction[] (related_name="imported_transactions")
+       └── resulting_transaction → Transaction (preenchido só após confirmação)
 ```
 
 ## Status calculado automaticamente

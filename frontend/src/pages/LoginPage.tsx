@@ -36,13 +36,24 @@ export function LoginPage() {
       className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
     >
       <Input label="E-mail" type="email" autoComplete="email" {...register("email")} error={errors.email?.message} />
-      <Input
-        label="Senha"
-        type="password"
-        autoComplete="current-password"
-        {...register("password")}
-        error={errors.password?.message}
-      />
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Senha
+          </label>
+          <Link to="/forgot-password" className="text-sm font-medium text-slate-600 hover:underline dark:text-slate-400">
+            Esqueci minha senha
+          </Link>
+        </div>
+        <Input
+          id="password"
+          type="password"
+          revealable
+          autoComplete="current-password"
+          {...register("password")}
+          error={errors.password?.message}
+        />
+      </div>
       {serverError && <p className="text-sm text-red-600">{serverError}</p>}
       <Button type="submit" isLoading={isSubmitting}>
         Entrar
