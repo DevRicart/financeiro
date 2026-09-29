@@ -10,6 +10,7 @@ import { DebtsPage } from "../pages/DebtsPage";
 import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
 import { GoalsPage } from "../pages/GoalsPage";
 import { ImportsPage } from "../pages/ImportsPage";
+import { LandingPage } from "../pages/LandingPage";
 import { LoginPage } from "../pages/LoginPage";
 import { PartnershipPage } from "../pages/PartnershipPage";
 import { ProfilePage } from "../pages/ProfilePage";
@@ -26,6 +27,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<PublicRoute />}>
+        <Route path="/" element={<LandingPage />} />
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -54,7 +56,6 @@ export function AppRoutes() {
         </Route>
       </Route>
 
-      <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
     </Routes>
   );
