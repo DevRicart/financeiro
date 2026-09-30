@@ -3,6 +3,7 @@ import { AppLayout } from "../layouts/AppLayout";
 import { AuthLayout } from "../layouts/AuthLayout";
 import { AccountsPage } from "../pages/AccountsPage";
 import { BudgetsPage } from "../pages/BudgetsPage";
+import { CategoriesPage } from "../pages/CategoriesPage";
 import { ClientsPage } from "../pages/ClientsPage";
 import { CreditCardsPage } from "../pages/CreditCardsPage";
 import { DashboardPage } from "../pages/DashboardPage";
@@ -48,6 +49,7 @@ export function AppRoutes() {
           <Route path="/app/budgets" element={<BudgetsPage />} />
           <Route path="/app/goals" element={<GoalsPage />} />
           <Route path="/app/debts" element={<DebtsPage />} />
+          <Route path="/app/categories" element={<CategoriesPage />} />
           <Route path="/app/clients" element={<ClientsPage />} />
           <Route path="/app/imports" element={<ImportsPage />} />
           <Route path="/app/reports" element={<ReportsPage />} />

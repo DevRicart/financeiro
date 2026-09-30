@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard as CreditCardIcon } from "lucide-react";
+import { CreditCard as CreditCardIcon, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -9,20 +9,24 @@ import { Input } from "../components/ui/Input";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { Modal } from "../components/ui/Modal";
 import { creditCardsService } from "../services/credit-cards.service";
+import type { CreditCard } from "../types/transaction";
 import { formatCurrency } from "../utils/currency";
 import { currentMonthValue, formatDate, formatMonthLabel, todayValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
 
 const CARD_COLORS = ["bg-purple-700", "bg-slate-800", "bg-emerald-700", "bg-blue-700", "bg-rose-700"];
 
+const EMPTY_FORM = { name: "", institution: "", closing_day: "10", due_day: "17" };
+
 export function CreditCardsPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setModalOpen] = useState(false);
+  const [editingCardId, setEditingCardId] = useState<number | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [month, setMonth] = useState(currentMonthValue());
   const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState({ name: "", institution: "", closing_day: "10", due_day: "17" });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: cards, isLoading } = useQuery({ queryKey: ["credit-cards"], queryFn: creditCardsService.list });
@@ -35,24 +39,54 @@ export function CreditCardsPage() {
     enabled: activeCardId !== null,
   });
 
-  const handleCreateCard = async () => {
+  const openCreateModal = () => {
+    setEditingCardId(null);
+    setForm(EMPTY_FORM);
+    setError(null);
+    setModalOpen(true);
+  };
+
+  const openEditModal = (card: CreditCard) => {
+    setEditingCardId(card.id);
+    setForm({
+      name: card.name,
+      institution: card.institution,
+      closing_day: String(card.closing_day),
+      due_day: String(card.due_day),
+    });
+    setError(null);
+    setModalOpen(true);
+  };
+
+  const handleSaveCard = async () => {
     setError(null);
     setIsSubmitting(true);
     try {
-      await creditCardsService.create({
+      const payload = {
         name: form.name,
         institution: form.institution,
         closing_day: Number(form.closing_day),
         due_day: Number(form.due_day),
-      });
+      };
+      if (editingCardId) {
+        await creditCardsService.update(editingCardId, payload);
+      } else {
+        await creditCardsService.create(payload);
+      }
       queryClient.invalidateQueries({ queryKey: ["credit-cards"] });
-      setForm({ name: "", institution: "", closing_day: "10", due_day: "17" });
       setModalOpen(false);
     } catch (err) {
-      setError(extractErrorMessage(err, "Não foi possível cadastrar o cartão."));
+      setError(extractErrorMessage(err, "Não foi possível salvar o cartão."));
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDeleteCard = async (card: CreditCard) => {
+    if (!confirm(`Excluir o cartão "${card.name}"? As compras já lançadas não serão apagadas.`)) return;
+    await creditCardsService.remove(card.id);
+    if (selectedCardId === card.id) setSelectedCardId(null);
+    queryClient.invalidateQueries({ queryKey: ["credit-cards"] });
   };
 
   const handlePayInvoice = async () => {
@@ -75,7 +109,7 @@ export function CreditCardsPage() {
           <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Cartões de crédito</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">Compras no cartão entram na fatura pelo dia de fechamento.</p>
         </div>
-        <Button onClick={() => setModalOpen(true)}>+ Novo cartão</Button>
+        <Button onClick={openCreateModal}>+ Novo cartão</Button>
       </div>
 
       {isLoading && <LoadingSpinner />}
@@ -87,21 +121,49 @@ export function CreditCardsPage() {
         <div className="flex flex-col gap-6 lg:flex-row">
           <div className="flex flex-shrink-0 flex-col gap-3">
             {cards.map((card, index) => (
-              <button
+              <div
                 key={card.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelectedCardId(card.id)}
-                className={`flex h-40 w-64 flex-col justify-between rounded-2xl p-5 text-left text-white shadow-sm transition-transform ${
+                onKeyDown={(event) => event.key === "Enter" && setSelectedCardId(card.id)}
+                className={`group relative flex h-40 w-64 cursor-pointer flex-col justify-between rounded-2xl p-5 text-left text-white shadow-sm transition-transform ${
                   CARD_COLORS[index % CARD_COLORS.length]
                 } ${activeCardId === card.id ? "ring-2 ring-offset-2 ring-slate-900 dark:ring-offset-slate-950" : ""}`}
               >
+                <div className="absolute right-3 top-3 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
+                    type="button"
+                    aria-label="Editar cartão"
+                    title="Editar cartão"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openEditModal(card);
+                    }}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/20 text-white hover:bg-black/40"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Excluir cartão"
+                    title="Excluir cartão"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDeleteCard(card);
+                    }}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/20 text-white hover:bg-red-600"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
                 <span className="text-lg font-medium">{card.name}</span>
                 <CreditCardIcon size={22} className="opacity-80" />
                 <span className="flex justify-between text-xs opacity-80">
                   <span>Fecha dia {card.closing_day}</span>
                   <span>Vence dia {card.due_day}</span>
                 </span>
-              </button>
+              </div>
             ))}
           </div>
 
@@ -177,7 +239,7 @@ export function CreditCardsPage() {
         </div>
       )}
 
-      <Modal title="Novo cartão" isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
+      <Modal title={editingCardId ? "Editar cartão" : "Novo cartão"} isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
         <div className="flex flex-col gap-4">
           <Input label="Nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <Input
@@ -202,8 +264,8 @@ export function CreditCardsPage() {
             onChange={(e) => setForm({ ...form, due_day: e.target.value })}
           />
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button onClick={handleCreateCard} isLoading={isSubmitting}>
-            Cadastrar
+          <Button onClick={handleSaveCard} isLoading={isSubmitting}>
+            {editingCardId ? "Salvar" : "Cadastrar"}
           </Button>
         </div>
       </Modal>

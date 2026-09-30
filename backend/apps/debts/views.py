@@ -3,8 +3,9 @@ from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import Debt, DebtPayment
-from .serializers import DebtPaymentSerializer, DebtSerializer
+from .models import Debt, DebtPayment, DebtRecurrenceRule
+from .serializers import DebtPaymentSerializer, DebtRecurrenceRuleSerializer, DebtSerializer
+from .services import generate_due_debts
 
 
 def _recompute_debt_status(debt):
@@ -46,3 +47,20 @@ class DebtViewSet(viewsets.ModelViewSet):
         payment = serializer.save(debt=debt)
         _recompute_debt_status(debt)
         return Response(DebtPaymentSerializer(payment).data, status=201)
+
+
+class DebtRecurrenceRuleViewSet(viewsets.ModelViewSet):
+    serializer_class = DebtRecurrenceRuleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        return DebtRecurrenceRule.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+    @action(detail=False, methods=["post"])
+    def generate(self, request):
+        created = generate_due_debts(user=request.user)
+        return Response({"created_count": len(created)})

@@ -1,5 +1,6 @@
-from django.db.models import Q
-from rest_framework import permissions, viewsets
+from django.db.models import ProtectedError, Q
+from rest_framework import permissions, status, viewsets
+from rest_framework.response import Response
 
 from .models import Category
 from .serializers import CategorySerializer
@@ -26,3 +27,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user, is_default=False)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {"detail": "Esta categoria já foi usada em lançamentos e não pode ser excluída. Desative-a em vez disso."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )

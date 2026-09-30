@@ -9,6 +9,7 @@ import {
   Landmark,
   Repeat,
   Settings,
+  Tag,
   Target,
   Upload,
   Users,
@@ -48,6 +49,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: "/app/budgets", label: "Orçamentos", icon: Target },
       { to: "/app/goals", label: "Metas", icon: Flag },
       { to: "/app/debts", label: "Dívidas", icon: HandCoins },
+      { to: "/app/categories", label: "Categorias", icon: Tag },
     ],
   },
   {
