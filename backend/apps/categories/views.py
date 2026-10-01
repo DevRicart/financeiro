@@ -6,16 +6,15 @@ from .models import Category
 from .serializers import CategorySerializer
 
 
-class IsOwnerOrReadOnlyDefault(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if obj.is_default:
-            return request.method in permissions.SAFE_METHODS
-        return obj.owner_id == request.user.id
-
-
 class CategoryViewSet(viewsets.ModelViewSet):
+    """Categories are shared household infrastructure, not private data: the
+    default pool (owner=None) is visible to and editable by every user, same
+    as their own. `get_queryset` is the actual authorization boundary — a
+    category outside it 404s before any object-level check would run — so no
+    extra permission class is needed to keep users off each other's data."""
+
     serializer_class = CategorySerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnlyDefault]
+    permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ["category_type", "is_active"]
     pagination_class = None
 

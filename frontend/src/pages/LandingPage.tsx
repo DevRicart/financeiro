@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
+import { Logo } from "../components/Logo";
 
 const CONTACT_EMAIL = "ricardodarkz13@gmail.com";
 
@@ -25,7 +26,7 @@ const NAV_LINKS = [
 const FAQS = [
   {
     question: "Preciso conectar minha conta do banco?",
-    answer: "Não. Você baixa o extrato no app do banco e envia o arquivo. O Financeiro nunca pede a senha do seu banco.",
+    answer: "Não. Você baixa o extrato no app do banco e envia o arquivo. O Lumi Finance nunca pede a senha do seu banco.",
   },
   {
     question: "Quais bancos funcionam?",
@@ -40,17 +41,6 @@ const FAQS = [
     answer: "Sim. Em Relatórios você exporta todas as transações em Excel ou CSV, e pode excluir sua conta quando quiser.",
   },
 ];
-
-function Logo() {
-  return (
-    <Link to="/" className="flex shrink-0 items-center gap-2.5 text-[#18221F]">
-      <span className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[#1D4A40] font-serif text-base italic text-white md:h-[30px] md:w-[30px] md:rounded-lg md:text-lg">
-        f
-      </span>
-      <span className="font-serif text-[23px] font-medium tracking-tight md:text-[26px]">Financeiro</span>
-    </Link>
-  );
-}
 
 function PillButton({
   to,
@@ -67,7 +57,7 @@ function PillButton({
 }) {
   const base = "inline-flex h-[52px] items-center justify-center rounded-[9px] px-6 text-base font-medium transition-colors";
   const variants: Record<typeof variant, string> = {
-    solid: "border border-[#1D4A40] bg-[#1D4A40] text-white hover:bg-[#2A6356] hover:border-[#2A6356]",
+    solid: "border border-[#1D4A40] bg-[#1D4A40] text-white hover:bg-[#12302A] hover:border-[#12302A]",
     outline: "border border-[#DDE1DB] bg-white text-[#18221F] hover:bg-[#F4F5F2]",
     "solid-light": "border border-white bg-white text-[#1D4A40] hover:bg-[#F4F5F2]",
     "outline-dark": "border border-white/45 bg-transparent text-white hover:bg-white/10",
@@ -117,7 +107,7 @@ function PreviewFrame({ children, dark, reverse }: { children: ReactNode; dark?:
 }
 
 function StatChip({ label, value, tone }: { label: string; value: string; tone: "green" | "red" | "neutral" }) {
-  const toneClass = tone === "green" ? "text-[#1D4A40]" : tone === "red" ? "text-red-600" : "text-[#18221F]";
+  const toneClass = tone === "green" ? "text-[#1D4A40]" : tone === "red" ? "text-[#B4473B]" : "text-[#18221F]";
   return (
     <div className="rounded-lg bg-[#F4F5F2] px-3 py-2.5">
       <p className="text-xs text-[#5B6560]">{label}</p>
@@ -162,7 +152,7 @@ function ImportsPreview() {
               <p className="truncate text-sm font-medium text-[#18221F]">{row.desc}</p>
               <p className="text-xs text-[#5B6560]">{row.category}</p>
             </div>
-            <span className={`text-sm font-medium ${row.amount.startsWith("-") ? "text-red-600" : "text-[#1D4A40]"}`}>
+            <span className={`text-sm font-medium ${row.amount.startsWith("-") ? "text-[#B4473B]" : "text-[#1D4A40]"}`}>
               {row.amount}
             </span>
           </div>
@@ -196,7 +186,7 @@ function BudgetsPreview() {
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-[#F4F5F2]">
               <div
-                className={`h-full rounded-full ${row.used > 100 ? "bg-red-500" : "bg-[#1D4A40]"}`}
+                className={`h-full rounded-full ${row.used > 100 ? "bg-[#B4473B]" : "bg-[#1D4A40]"}`}
                 style={{ width: `${Math.min(100, row.used)}%` }}
               />
             </div>
@@ -326,7 +316,9 @@ export function LandingPage() {
     <div className="min-h-screen overflow-x-hidden bg-[#F4F5F2] font-sans text-[#18221F]">
       <header className="relative border-b border-[#DDE1DB]">
         <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-8 px-5 md:h-[76px] md:px-10 lg:h-[84px] lg:px-20">
-          <Logo />
+          <Link to="/" className="shrink-0">
+            <Logo className="h-8 w-auto md:h-9" />
+          </Link>
           <nav className="ml-6 hidden gap-8 lg:flex">
             {NAV_LINKS.map((link) => (
               <a key={link.href} href={link.href} className="text-[15px] font-medium text-[#2F3A36] hover:text-[#1D4A40]">
@@ -340,7 +332,7 @@ export function LandingPage() {
             </Link>
             <Link
               to="/register"
-              className="hidden h-11 items-center justify-center rounded-[9px] border border-[#1D4A40] bg-[#1D4A40] px-5 text-[15px] font-medium text-white hover:bg-[#2A6356] md:inline-flex"
+              className="hidden h-11 items-center justify-center rounded-[9px] border border-[#1D4A40] bg-[#1D4A40] px-5 text-[15px] font-medium text-white hover:bg-[#12302A] md:inline-flex"
             >
               Criar conta
             </Link>
@@ -576,7 +568,7 @@ export function LandingPage() {
             </h2>
             <p className="max-w-[400px] text-base leading-relaxed text-[#5B6560]">
               Não encontrou o que procurava? Escreva para{" "}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium text-[#1D4A40] hover:text-[#2A6356]">
+              <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium text-[#1D4A40] hover:text-[#12302A]">
                 {CONTACT_EMAIL}
               </a>
               .
@@ -611,8 +603,8 @@ export function LandingPage() {
       </section>
 
       <footer className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-12 md:px-10 lg:flex-row lg:items-center lg:gap-10 lg:px-20 lg:py-12">
-        <span className="font-serif text-xl font-medium text-[#18221F] md:text-[22px]">Financeiro</span>
-        <span className="text-sm text-[#5B6560] lg:order-3 lg:ml-auto">© 2026 Financeiro</span>
+        <span className="font-serif text-xl font-medium text-[#18221F] md:text-[22px]">Lumi Finance</span>
+        <span className="text-sm text-[#5B6560] lg:order-3 lg:ml-auto">© 2026 Lumi Finance</span>
         <nav className="flex flex-wrap gap-x-6 gap-y-3 lg:order-2">
           {[
             { href: "#funcionalidades", label: "Funcionalidades" },

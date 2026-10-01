@@ -42,10 +42,10 @@ export function ClientsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Clientes</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="text-3xl font-semibold text-tinta dark:text-papel">Clientes</h1>
+          <p className="text-sm text-cinza dark:text-papel/60">
             Pacientes, clientes de freelance ou qualquer pessoa que te paga por atendimento ou projeto.
           </p>
         </div>
@@ -53,13 +53,13 @@ export function ClientsPage() {
       </div>
 
       {clients && clients.length > 0 && (
-        <div className="relative max-w-sm">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="relative w-full max-w-sm">
+          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-cinza/60" />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Buscar cliente"
-            className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 dark:border-slate-700 dark:bg-slate-900"
+            className="w-full rounded-lg border border-cinza/30 bg-white py-2 pl-9 pr-3 text-sm text-tinta outline-none focus:border-petroleo focus:ring-1 focus:ring-petroleo dark:border-papel/15 dark:bg-noite-clara dark:text-papel"
           />
         </div>
       )}
@@ -70,26 +70,26 @@ export function ClientsPage() {
       )}
 
       {filtered && filtered.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-cinza/15 dark:border-papel/10">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+            <thead className="bg-nevoa/40 text-xs uppercase text-cinza dark:bg-noite-clara dark:text-papel/60">
               <tr>
                 <th className="px-4 py-3">Cliente</th>
                 <th className="px-4 py-3">Contato</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-cinza/15 dark:divide-papel/10">
               {filtered.map((client) => (
                 <tr key={client.id}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-nevoa font-medium text-tinta dark:bg-noite-borda dark:text-papel">
                         {client.display_name.charAt(0).toUpperCase()}
                       </span>
-                      <p className="font-medium text-slate-900 dark:text-slate-100">{client.display_name}</p>
+                      <p className="font-medium text-tinta dark:text-papel">{client.display_name}</p>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
+                  <td className="px-4 py-3 text-cinza dark:text-papel/60">
                     {client.email || client.phone || "—"}
                   </td>
                 </tr>
@@ -104,7 +104,7 @@ export function ClientsPage() {
           <Input label="Nome" value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
           <Input label="E-mail (opcional)" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
           <Input label="Telefone (opcional)" value={phone} onChange={(event) => setPhone(event.target.value)} />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-despesa">{error}</p>}
           <Button onClick={handleCreate} isLoading={isSubmitting}>
             Cadastrar
           </Button>

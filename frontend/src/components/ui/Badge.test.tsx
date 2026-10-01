@@ -10,16 +10,16 @@ describe("Badge", () => {
 
   it("defaults to the neutral tone", () => {
     render(<Badge>Pendente</Badge>);
-    expect(screen.getByText("Pendente")).toHaveClass("bg-slate-100");
+    expect(screen.getByText("Pendente")).toHaveClass("bg-nevoa");
   });
 
   it("applies the danger tone classes", () => {
     render(<Badge tone="danger">Atrasada</Badge>);
-    expect(screen.getByText("Atrasada")).toHaveClass("bg-red-100");
+    expect(screen.getByText("Atrasada")).toHaveClass("bg-despesa/15");
   });
 
   it("applies the success tone classes", () => {
     render(<Badge tone="success">Concluída</Badge>);
-    expect(screen.getByText("Concluída")).toHaveClass("bg-green-100");
+    expect(screen.getByText("Concluída")).toHaveClass("bg-receita/15");
   });
 });

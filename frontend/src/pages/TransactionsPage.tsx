@@ -149,9 +149,9 @@ export function TransactionsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Transações</h1>
-        <div className="flex gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-semibold text-tinta dark:text-papel">Transações</h1>
+        <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => setInstallmentModalOpen(true)}>
             Parcelar despesa
           </Button>
@@ -164,7 +164,7 @@ export function TransactionsPage() {
       <Select
         value={typeFilter}
         onChange={(event) => setTypeFilter(event.target.value as TransactionType | "")}
-        className="w-48"
+        className="w-full sm:w-48"
       >
         <option value="">Todas</option>
         <option value="INCOME">Receitas</option>
@@ -172,8 +172,8 @@ export function TransactionsPage() {
       </Select>
 
       {selectedIds.size > 0 && (
-        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
-          <span className="text-sm text-slate-600 dark:text-slate-400">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-cinza/15 bg-nevoa/40 px-4 py-2 dark:border-papel/10 dark:bg-noite-clara">
+          <span className="text-sm text-cinza dark:text-papel/70">
             {selectedIds.size} transação(ões) selecionada(s)
           </span>
           <Button variant="danger" onClick={handleBulkDelete} isLoading={isBulkDeleting}>
@@ -189,9 +189,9 @@ export function TransactionsPage() {
       )}
 
       {!isLoading && data && data.results.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-cinza/15 dark:border-papel/10">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+            <thead className="bg-nevoa/40 text-xs uppercase text-cinza dark:bg-noite-clara dark:text-papel/60">
               <tr>
                 <th className="px-4 py-3">
                   <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} aria-label="Selecionar todas" />
@@ -204,7 +204,7 @@ export function TransactionsPage() {
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-cinza/15 dark:divide-papel/10">
               {data.results.map((transaction) => (
                 <tr key={transaction.id}>
                   <td className="px-4 py-3">
@@ -215,10 +215,10 @@ export function TransactionsPage() {
                       aria-label={`Selecionar ${transaction.title}`}
                     />
                   </td>
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
+                  <td className="px-4 py-3 text-cinza dark:text-papel/60">
                     {formatDate(transaction.competence_date)}
                   </td>
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+                  <td className="px-4 py-3 font-medium text-tinta dark:text-papel">
                     {transaction.title}
                     <div className="mt-1 flex gap-1">
                       {transaction.is_recurring && <Badge tone="info">Recorrente</Badge>}
@@ -226,12 +226,12 @@ export function TransactionsPage() {
                       {transaction.credit_card_name && <Badge tone="neutral">{transaction.credit_card_name}</Badge>}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
+                  <td className="px-4 py-3 text-cinza dark:text-papel/60">
                     {transaction.category_detail?.icon} {transaction.category_detail?.name}
                   </td>
                   <td
                     className={`px-4 py-3 font-medium ${
-                      transaction.transaction_type === "INCOME" ? "text-green-600" : "text-red-600"
+                      transaction.transaction_type === "INCOME" ? "text-receita" : "text-despesa"
                     }`}
                   >
                     {transaction.transaction_type === "EXPENSE" ? "-" : "+"}
@@ -252,7 +252,7 @@ export function TransactionsPage() {
                         to={`/app/transactions/${transaction.id}/edit`}
                         aria-label="Editar"
                         title="Editar"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-cinza hover:bg-nevoa hover:text-tinta dark:text-papel/60 dark:hover:bg-noite-borda dark:hover:text-papel"
                       >
                         <Pencil size={16} />
                       </Link>
@@ -261,7 +261,7 @@ export function TransactionsPage() {
                         onClick={() => handleDelete(transaction)}
                         aria-label="Excluir"
                         title="Excluir"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950 dark:hover:text-red-400"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-cinza hover:bg-despesa/10 hover:text-despesa dark:text-papel/60"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -312,7 +312,7 @@ export function TransactionsPage() {
             {...register("first_due_date")}
             error={errors.first_due_date?.message}
           />
-          {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+          {serverError && <p className="text-sm text-despesa">{serverError}</p>}
           <Button type="submit" isLoading={isSubmitting}>
             Criar parcelamento
           </Button>

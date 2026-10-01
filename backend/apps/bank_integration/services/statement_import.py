@@ -14,7 +14,7 @@ CATEGORY_KEYWORDS = {
     "Telefone": ["vivo", "claro", "tim", "celular"],
     "Assinaturas": ["netflix", "spotify", "amazon prime", "disney", "hbo"],
     "Saúde": ["farmacia", "farmácia", "drogaria"],
-    "Energia": ["enel", "cemig", "energisa", "light sa", "cpfl"],
+    "Contas": ["fibra", "net virtua", "internet", "enel", "cemig", "energisa", "light sa", "cpfl"],
 }
 
 

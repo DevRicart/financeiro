@@ -25,35 +25,37 @@ export function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          Se existir uma conta com esse e-mail, enviamos um link para redefinir a senha.
-        </p>
-        <Link to="/login" className="text-center text-sm font-medium text-slate-900 underline dark:text-slate-100">
-          Voltar para o login
-        </Link>
+      <div className="flex flex-col gap-8">
+        <h1 className="font-serif text-4xl font-medium text-tinta dark:text-papel">Verifique seu e-mail</h1>
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-cinza dark:text-papel/70">
+            Se existir uma conta com esse e-mail, enviamos um link para redefinir a senha.
+          </p>
+          <Link to="/login" className="text-center text-sm font-medium text-petroleo underline dark:text-luz">
+            Voltar para o login
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      noValidate
-      className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-    >
-      <p className="text-sm text-slate-600 dark:text-slate-400">
-        Informe seu e-mail e enviaremos um link para redefinir sua senha.
-      </p>
-      <Input label="E-mail" type="email" autoComplete="email" {...register("email")} error={errors.email?.message} />
-      <Button type="submit" isLoading={isSubmitting}>
-        Enviar link
-      </Button>
-      <p className="text-center text-sm text-slate-600 dark:text-slate-400">
-        <Link to="/login" className="font-medium text-slate-900 underline dark:text-slate-100">
-          Voltar para o login
-        </Link>
-      </p>
-    </form>
+    <div className="flex flex-col gap-8">
+      <h1 className="font-serif text-4xl font-medium text-tinta dark:text-papel">Esqueci minha senha</h1>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+        <p className="text-sm text-cinza dark:text-papel/70">
+          Informe seu e-mail e enviaremos um link para redefinir sua senha.
+        </p>
+        <Input label="E-mail" type="email" autoComplete="email" {...register("email")} error={errors.email?.message} />
+        <Button type="submit" isLoading={isSubmitting} className="w-full">
+          Enviar link
+        </Button>
+        <p className="text-center text-sm text-cinza dark:text-papel/70">
+          <Link to="/login" className="font-medium text-petroleo underline dark:text-luz">
+            Voltar para o login
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }

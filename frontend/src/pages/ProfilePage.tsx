@@ -84,7 +84,7 @@ export function ProfilePage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
       <div>
-        <h1 className="mb-6 text-3xl font-semibold text-slate-900 dark:text-slate-100">Perfil</h1>
+        <h1 className="mb-6 text-3xl font-semibold text-tinta dark:text-papel">Perfil</h1>
         <Card>
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
             <Input label="E-mail" value={user?.email ?? ""} disabled />
@@ -103,8 +103,8 @@ export function ProfilePage() {
                 </option>
               ))}
             </Select>
-            {message && <p className="text-sm text-green-600">{message}</p>}
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {message && <p className="text-sm text-receita">{message}</p>}
+            {error && <p className="text-sm text-despesa">{error}</p>}
             <Button type="submit" isLoading={isSubmitting}>
               Salvar
             </Button>
@@ -112,9 +112,9 @@ export function ProfilePage() {
         </Card>
       </div>
 
-      <Card className="border-red-200 dark:border-red-900">
-        <h2 className="mb-2 font-semibold text-red-700 dark:text-red-400">Excluir conta</h2>
-        <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+      <Card className="border-despesa/30">
+        <h2 className="mb-2 font-semibold text-despesa">Excluir conta</h2>
+        <p className="mb-4 text-sm text-cinza dark:text-papel/60">
           Remove permanentemente sua conta e todos os seus dados financeiros. Não pode ser desfeito.
         </p>
 
@@ -130,7 +130,7 @@ export function ProfilePage() {
               value={deletePassword}
               onChange={(event) => setDeletePassword(event.target.value)}
             />
-            {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+            {deleteError && <p className="text-sm text-despesa">{deleteError}</p>}
             <div className="flex gap-2">
               <Button variant="ghost" onClick={() => setShowDeleteConfirm(false)}>
                 Cancelar

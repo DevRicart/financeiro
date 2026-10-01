@@ -86,6 +86,14 @@ export const transactionsService = {
     return data;
   },
 
+  async updateAccount(
+    accountId: number,
+    payload: Partial<{ name: string; institution: string; account_type: string; initial_balance: string }>,
+  ) {
+    const { data } = await api.patch<FinancialAccount>(`/financial-accounts/${accountId}/`, payload);
+    return data;
+  },
+
   async removeAccount(accountId: number) {
     await api.delete(`/financial-accounts/${accountId}/`);
   },

@@ -198,10 +198,10 @@ export function DebtsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Dívidas</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Dinheiro que te devem e que você deve para alguém.</p>
+          <h1 className="text-3xl font-semibold text-tinta dark:text-papel">Dívidas</h1>
+          <p className="text-sm text-cinza dark:text-papel/60">Dinheiro que te devem e que você deve para alguém.</p>
         </div>
         <Button onClick={openCreateModal}>+ Nova dívida</Button>
       </div>
@@ -212,8 +212,8 @@ export function DebtsPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div>
             <div className="mb-3 flex items-baseline justify-between">
-              <h2 className="font-semibold text-slate-900 dark:text-slate-100">A receber</h2>
-              <span className="font-serif text-2xl font-medium text-green-700">{formatCurrency(receivableTotal)}</span>
+              <h2 className="font-semibold text-tinta dark:text-papel">A receber</h2>
+              <span className="font-serif text-2xl font-medium text-receita">{formatCurrency(receivableTotal)}</span>
             </div>
             <div className="flex flex-col gap-3">
               {receivable.length === 0 ? (
@@ -239,8 +239,8 @@ export function DebtsPage() {
 
           <div>
             <div className="mb-3 flex items-baseline justify-between">
-              <h2 className="font-semibold text-slate-900 dark:text-slate-100">A pagar</h2>
-              <span className="font-serif text-2xl font-medium text-red-600">{formatCurrency(payableTotal)}</span>
+              <h2 className="font-semibold text-tinta dark:text-papel">A pagar</h2>
+              <span className="font-serif text-2xl font-medium text-despesa">{formatCurrency(payableTotal)}</span>
             </div>
             <div className="flex flex-col gap-3">
               {payable.length === 0 ? (
@@ -269,8 +269,8 @@ export function DebtsPage() {
       <Card>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-semibold text-slate-900 dark:text-slate-100">Dívidas recorrentes</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <h2 className="font-semibold text-tinta dark:text-papel">Dívidas recorrentes</h2>
+            <p className="text-sm text-cinza dark:text-papel/60">
               Uma dívida que se repete sozinha todo mês (ou semana/ano), sem precisar cadastrar de novo.
             </p>
           </div>
@@ -289,9 +289,9 @@ export function DebtsPage() {
         )}
 
         {recurrences && recurrences.length > 0 && (
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="overflow-x-auto rounded-xl border border-cinza/15 dark:border-papel/10">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              <thead className="bg-nevoa/40 text-xs uppercase text-cinza dark:bg-noite-clara dark:text-papel/60">
                 <tr>
                   <th className="px-4 py-3">Pessoa / Motivo</th>
                   <th className="px-4 py-3">Direção</th>
@@ -301,19 +301,19 @@ export function DebtsPage() {
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-cinza/15 dark:divide-papel/10">
                 {recurrences.map((rule) => (
                   <tr key={rule.id}>
                     <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900 dark:text-slate-100">{rule.display_name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{rule.reason}</p>
+                      <p className="font-medium text-tinta dark:text-papel">{rule.display_name}</p>
+                      <p className="text-xs text-cinza dark:text-papel/60">{rule.reason}</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
+                    <td className="px-4 py-3 text-cinza dark:text-papel/60">
                       {rule.direction === "PAYABLE" ? "A pagar" : "A receber"}
                     </td>
-                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{FREQUENCY_LABEL[rule.frequency]}</td>
+                    <td className="px-4 py-3 text-cinza dark:text-papel/60">{FREQUENCY_LABEL[rule.frequency]}</td>
                     <td
-                      className={`px-4 py-3 font-medium ${rule.direction === "PAYABLE" ? "text-red-600" : "text-green-700"}`}
+                      className={`px-4 py-3 font-medium ${rule.direction === "PAYABLE" ? "text-despesa" : "text-receita"}`}
                     >
                       {formatCurrency(rule.amount)}
                     </td>
@@ -324,12 +324,12 @@ export function DebtsPage() {
                         aria-checked={rule.is_active}
                         onClick={() => handleToggleRecurrenceActive(rule)}
                         className={`relative h-6 w-11 rounded-full transition-colors ${
-                          rule.is_active ? "bg-slate-800 dark:bg-slate-100" : "bg-slate-200 dark:bg-slate-700"
+                          rule.is_active ? "bg-petroleo" : "bg-cinza/30 dark:bg-noite-borda"
                         }`}
                       >
                         <span
-                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform dark:bg-slate-900 ${
-                            rule.is_active ? "translate-x-5" : "translate-x-0.5"
+                          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                            rule.is_active ? "translate-x-5" : "translate-x-0"
                           }`}
                         />
                       </button>
@@ -340,7 +340,7 @@ export function DebtsPage() {
                         onClick={() => handleDeleteRecurrence(rule)}
                         aria-label="Remover"
                         title="Remover"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950 dark:hover:text-red-400"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-cinza hover:bg-despesa/10 hover:text-despesa dark:text-papel/60"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -356,7 +356,7 @@ export function DebtsPage() {
       <Modal title={editingDebtId ? "Editar dívida" : "Nova dívida"} isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
           <div>
-            <span className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Pessoa</span>
+            <span className="mb-1 block text-sm font-medium text-tinta dark:text-papel">Pessoa</span>
             <div className="mb-2 flex gap-2">
               <Button
                 type="button"
@@ -403,7 +403,7 @@ export function DebtsPage() {
             error={errors.total_amount?.message}
           />
           <Input label="Vencimento (opcional)" type="date" {...register("due_date")} />
-          {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+          {serverError && <p className="text-sm text-despesa">{serverError}</p>}
           <Button type="submit" isLoading={isSubmitting}>
             {editingDebtId ? "Salvar" : "Cadastrar"}
           </Button>
@@ -454,7 +454,7 @@ export function DebtsPage() {
             value={recurrenceForm.start_date}
             onChange={(e) => setRecurrenceForm({ ...recurrenceForm, start_date: e.target.value })}
           />
-          {recurrenceError && <p className="text-sm text-red-600">{recurrenceError}</p>}
+          {recurrenceError && <p className="text-sm text-despesa">{recurrenceError}</p>}
           <Button onClick={handleCreateRecurrence} isLoading={isRecurrenceSubmitting}>
             Criar
           </Button>
@@ -466,9 +466,9 @@ export function DebtsPage() {
 
 function EmptyDebtColumn({ text }: { text: string }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 px-6 py-10 text-center dark:border-slate-700">
-      <HandCoins size={28} className="text-slate-300 dark:text-slate-600" />
-      <p className="text-sm text-slate-500 dark:text-slate-400">{text}</p>
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-cinza/30 px-6 py-10 text-center dark:border-papel/15">
+      <HandCoins size={28} className="text-cinza/50 dark:text-papel/30" />
+      <p className="text-sm text-cinza dark:text-papel/60">{text}</p>
     </div>
   );
 }
@@ -501,12 +501,12 @@ function DebtCard({
   return (
     <Card>
       <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-nevoa font-medium text-tinta dark:bg-noite-borda dark:text-papel">
           {debt.display_name.charAt(0).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-slate-900 dark:text-slate-100">{debt.display_name}</p>
-          <p className="truncate text-xs text-slate-500 dark:text-slate-400">{debt.reason}</p>
+          <p className="truncate font-medium text-tinta dark:text-papel">{debt.display_name}</p>
+          <p className="truncate text-xs text-cinza dark:text-papel/60">{debt.reason}</p>
         </div>
         {debt.status === "PARTIAL" && <Badge tone="warning">Parcial</Badge>}
         {debt.status === "OVERDUE" && <Badge tone="danger">Atrasada</Badge>}
@@ -516,7 +516,7 @@ function DebtCard({
           onClick={() => onEdit(debt)}
           aria-label="Editar dívida"
           title="Editar dívida"
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-cinza hover:bg-nevoa hover:text-tinta dark:text-papel/60 dark:hover:bg-noite-borda dark:hover:text-papel"
         >
           <Pencil size={14} />
         </button>
@@ -525,23 +525,23 @@ function DebtCard({
           onClick={() => onDelete(debt)}
           aria-label="Excluir dívida"
           title="Excluir dívida"
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-950 dark:hover:text-red-400"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-cinza hover:bg-despesa/10 hover:text-despesa dark:text-papel/60"
         >
           <Trash2 size={14} />
         </button>
       </div>
 
-      <p className="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+      <p className="mt-3 text-2xl font-semibold text-tinta dark:text-papel">
         {isSettled ? formatCurrency(debt.total_amount) : `Falta ${formatCurrency(debt.remaining_amount)}`}
       </p>
 
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-nevoa dark:bg-noite-borda">
         <div
-          className="h-full rounded-full bg-slate-800 dark:bg-slate-100"
+          className="h-full rounded-full bg-petroleo"
           style={{ width: `${Math.min(100, percentage)}%` }}
         />
       </div>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+      <p className="mt-1 text-xs text-cinza dark:text-papel/60">
         {formatCurrency(paid)} de {formatCurrency(debt.total_amount)}
       </p>
 

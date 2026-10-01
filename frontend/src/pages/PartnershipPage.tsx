@@ -56,19 +56,19 @@ export function PartnershipPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Parceiro</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="text-3xl font-semibold text-tinta dark:text-papel">Parceiro</h1>
+        <p className="text-sm text-cinza dark:text-papel/60">
           Divida a vida financeira com quem mora com você, sem abrir mão da sua privacidade.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
-          <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
+          <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-luz/15 text-luz-escura">
             <Heart size={18} />
           </span>
-          <h2 className="mb-1 font-semibold text-slate-900 dark:text-slate-100">Convide seu parceiro</h2>
-          <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+          <h2 className="mb-1 font-semibold text-tinta dark:text-papel">Convide seu parceiro</h2>
+          <p className="mb-4 text-sm text-cinza dark:text-papel/60">
             Enviaremos um link por e-mail. O vínculo só é criado quando a pessoa aceitar.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -81,26 +81,24 @@ export function PartnershipPage() {
             />
             <Button onClick={handleInvite}>Enviar convite</Button>
           </div>
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          {error && <p className="mt-2 text-sm text-despesa">{error}</p>}
         </Card>
 
         <Card>
-          <h2 className="mb-3 font-semibold text-slate-900 dark:text-slate-100">O que fica compartilhado</h2>
-          <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+          <h2 className="mb-3 font-semibold text-tinta dark:text-papel">O que fica compartilhado</h2>
+          <div className="flex flex-col divide-y divide-cinza/15 dark:divide-papel/10">
             {SHARED_ITEMS.map((item) => (
               <div key={item.label} className="flex gap-3 py-3 first:pt-0 last:pb-0">
                 <span
                   className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${
-                    item.shared
-                      ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-                      : "bg-slate-100 text-slate-400 dark:bg-slate-800"
+                    item.shared ? "bg-receita/15 text-receita" : "bg-nevoa text-cinza dark:bg-noite-borda"
                   }`}
                 >
                   {item.shared ? <Check size={12} /> : <X size={12} />}
                 </span>
                 <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{item.label}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{item.detail}</p>
+                  <p className="text-sm font-medium text-tinta dark:text-papel">{item.label}</p>
+                  <p className="text-xs text-cinza dark:text-papel/60">{item.detail}</p>
                 </div>
               </div>
             ))}
@@ -126,7 +124,7 @@ export function PartnershipPage() {
             return (
               <Card key={partnership.id} className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-slate-900 dark:text-slate-100">{otherPersonEmail}</p>
+                  <p className="font-medium text-tinta dark:text-papel">{otherPersonEmail}</p>
                   <Badge
                     tone={
                       partnership.status === "ACTIVE"

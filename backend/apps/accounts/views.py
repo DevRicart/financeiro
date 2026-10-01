@@ -124,7 +124,7 @@ class PasswordResetRequestView(APIView):
             token = token_generator.make_token(user)
             reset_link = f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
             send_mail(
-                subject="Redefinição de senha — Financeiro",
+                subject="Redefinição de senha — Lumi Finance",
                 message=f"Use o link para redefinir sua senha: {reset_link}",
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[email],

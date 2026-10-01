@@ -8,15 +8,15 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { Input } from "../components/ui/Input";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { Modal } from "../components/ui/Modal";
+import { Select } from "../components/ui/Select";
+import { BANKS, getBankColor } from "../constants/banks";
 import { creditCardsService } from "../services/credit-cards.service";
 import type { CreditCard } from "../types/transaction";
 import { formatCurrency } from "../utils/currency";
 import { currentMonthValue, formatDate, formatMonthLabel, todayValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
 
-const CARD_COLORS = ["bg-purple-700", "bg-slate-800", "bg-emerald-700", "bg-blue-700", "bg-rose-700"];
-
-const EMPTY_FORM = { name: "", institution: "", closing_day: "10", due_day: "17" };
+const EMPTY_FORM = { name: "", institution: BANKS[0].value, closing_day: "10", due_day: "17" };
 
 export function CreditCardsPage() {
   const queryClient = useQueryClient();
@@ -106,8 +106,8 @@ export function CreditCardsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Cartões de crédito</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Compras no cartão entram na fatura pelo dia de fechamento.</p>
+          <h1 className="text-3xl font-semibold text-tinta dark:text-papel">Cartões de crédito</h1>
+          <p className="text-sm text-cinza dark:text-papel/60">Compras no cartão entram na fatura pelo dia de fechamento.</p>
         </div>
         <Button onClick={openCreateModal}>+ Novo cartão</Button>
       </div>
@@ -120,16 +120,17 @@ export function CreditCardsPage() {
       {cards && cards.length > 0 && (
         <div className="flex flex-col gap-6 lg:flex-row">
           <div className="flex flex-shrink-0 flex-col gap-3">
-            {cards.map((card, index) => (
+            {cards.map((card) => (
               <div
                 key={card.id}
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelectedCardId(card.id)}
                 onKeyDown={(event) => event.key === "Enter" && setSelectedCardId(card.id)}
+                style={{ backgroundColor: getBankColor(card.institution) }}
                 className={`group relative flex h-40 w-64 cursor-pointer flex-col justify-between rounded-2xl p-5 text-left text-white shadow-sm transition-transform ${
-                  CARD_COLORS[index % CARD_COLORS.length]
-                } ${activeCardId === card.id ? "ring-2 ring-offset-2 ring-slate-900 dark:ring-offset-slate-950" : ""}`}
+                  activeCardId === card.id ? "ring-2 ring-offset-2 ring-petroleo dark:ring-offset-noite" : ""
+                }`}
               >
                 <div className="absolute right-3 top-3 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                   <button
@@ -152,7 +153,7 @@ export function CreditCardsPage() {
                       event.stopPropagation();
                       handleDeleteCard(card);
                     }}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/20 text-white hover:bg-red-600"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/20 text-white hover:bg-despesa"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -171,14 +172,14 @@ export function CreditCardsPage() {
             <Card className="flex-1">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-slate-900 dark:text-slate-100">Fatura de {formatMonthLabel(month)}</h2>
+                  <h2 className="font-semibold text-tinta dark:text-papel">Fatura de {formatMonthLabel(month)}</h2>
                   <Badge tone="neutral">Aberta</Badge>
                 </div>
                 <input
                   type="month"
                   value={month}
                   onChange={(event) => setMonth(event.target.value)}
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+                  className="rounded-lg border border-cinza/30 px-3 py-2 text-sm dark:border-papel/15 dark:bg-noite-clara dark:text-papel"
                 />
               </div>
 
@@ -188,8 +189,8 @@ export function CreditCardsPage() {
                 <>
                   <div className="flex flex-wrap gap-10">
                     <div>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Valor atual</p>
-                      <p className="font-serif text-3xl font-medium text-slate-900 dark:text-slate-100">
+                      <p className="text-sm text-cinza dark:text-papel/60">Valor atual</p>
+                      <p className="font-serif text-3xl font-medium text-tinta dark:text-papel">
                         {formatCurrency(invoiceQuery.data.total)}
                       </p>
                     </div>
@@ -197,15 +198,15 @@ export function CreditCardsPage() {
 
                   {limit && (
                     <div className="mt-4">
-                      <div className="mb-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                      <div className="mb-1 flex items-center justify-between text-xs text-cinza dark:text-papel/60">
                         <span>Limite usado</span>
                         <span>
                           {formatCurrency(used)} de {formatCurrency(limit)}
                         </span>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-nevoa dark:bg-noite-borda">
                         <div
-                          className="h-full rounded-full bg-slate-800 dark:bg-slate-100"
+                          className="h-full rounded-full bg-petroleo"
                           style={{ width: `${usedPercentage}%` }}
                         />
                       </div>
@@ -216,11 +217,11 @@ export function CreditCardsPage() {
                     {invoiceQuery.data.total > 0 && <Button onClick={handlePayInvoice}>Pagar fatura</Button>}
                   </div>
 
-                  <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+                  <div className="mt-4 border-t border-cinza/15 pt-4 dark:border-papel/10">
                     {invoiceQuery.data.purchases.length === 0 ? (
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Nenhuma compra nesta fatura.</p>
+                      <p className="text-sm text-cinza dark:text-papel/60">Nenhuma compra nesta fatura.</p>
                     ) : (
-                      <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                      <ul className="divide-y divide-cinza/15 dark:divide-papel/10">
                         {invoiceQuery.data.purchases.map((purchase) => (
                           <li key={purchase.id} className="flex justify-between py-2 text-sm">
                             <span>
@@ -242,11 +243,17 @@ export function CreditCardsPage() {
       <Modal title={editingCardId ? "Editar cartão" : "Novo cartão"} isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
         <div className="flex flex-col gap-4">
           <Input label="Nome" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <Input
+          <Select
             label="Instituição"
             value={form.institution}
             onChange={(e) => setForm({ ...form, institution: e.target.value })}
-          />
+          >
+            {BANKS.map((bank) => (
+              <option key={bank.value} value={bank.value}>
+                {bank.label}
+              </option>
+            ))}
+          </Select>
           <Input
             label="Dia de fechamento"
             type="number"
@@ -263,7 +270,7 @@ export function CreditCardsPage() {
             value={form.due_day}
             onChange={(e) => setForm({ ...form, due_day: e.target.value })}
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-despesa">{error}</p>}
           <Button onClick={handleSaveCard} isLoading={isSubmitting}>
             {editingCardId ? "Salvar" : "Cadastrar"}
           </Button>

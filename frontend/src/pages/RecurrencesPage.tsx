@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Trash2 } from "lucide-react";
+import { Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -10,7 +10,7 @@ import { Select } from "../components/ui/Select";
 import { categoriesService } from "../services/categories.service";
 import { recurrencesService } from "../services/recurrences.service";
 import type { RecurrenceFrequency, RecurrenceRule, TransactionType } from "../types/transaction";
-import { formatCurrency, parseCurrencyInput } from "../utils/currency";
+import { formatCurrency, formatCurrencyInput, parseCurrencyInput } from "../utils/currency";
 import { todayValue } from "../utils/dates";
 import { extractErrorMessage } from "../utils/errors";
 
@@ -26,20 +26,23 @@ function frequencyDetail(rule: RecurrenceRule) {
   return FREQUENCY_LABEL[rule.frequency];
 }
 
+const EMPTY_FORM = {
+  title: "",
+  transaction_type: "EXPENSE" as TransactionType,
+  amount: "",
+  category: "",
+  frequency: "MONTHLY" as RecurrenceFrequency,
+  start_date: todayValue(),
+};
+
 export function RecurrencesPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setModalOpen] = useState(false);
+  const [editingRuleId, setEditingRuleId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [form, setForm] = useState({
-    title: "",
-    transaction_type: "EXPENSE" as TransactionType,
-    amount: "",
-    category: "",
-    frequency: "MONTHLY" as RecurrenceFrequency,
-    start_date: todayValue(),
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const { data: rules, isLoading } = useQuery({ queryKey: ["recurrences"], queryFn: recurrencesService.list });
   const { data: formCategories } = useQuery({
@@ -65,24 +68,50 @@ export function RecurrencesPage() {
     .reduce((sum, rule) => sum + Number(rule.amount), 0);
   const pausedCount = (rules?.length ?? 0) - activeRules.length;
 
-  const handleCreate = async () => {
+  const openCreateModal = () => {
+    setEditingRuleId(null);
+    setError(null);
+    setForm(EMPTY_FORM);
+    setModalOpen(true);
+  };
+
+  const openEditModal = (rule: RecurrenceRule) => {
+    setEditingRuleId(rule.id);
+    setError(null);
+    setForm({
+      title: rule.title,
+      transaction_type: rule.transaction_type,
+      amount: formatCurrencyInput(rule.amount),
+      category: String(rule.category),
+      frequency: rule.frequency,
+      start_date: rule.start_date,
+    });
+    setModalOpen(true);
+  };
+
+  const handleSave = async () => {
     if (!form.title || !form.amount || !form.category) return;
     setError(null);
     setIsSubmitting(true);
     try {
-      await recurrencesService.create({
+      const payload = {
         title: form.title,
         transaction_type: form.transaction_type,
         amount: parseCurrencyInput(form.amount),
         category: Number(form.category),
         frequency: form.frequency,
         start_date: form.start_date,
-      });
+      };
+      if (editingRuleId) {
+        await recurrencesService.update(editingRuleId, payload);
+      } else {
+        await recurrencesService.create(payload);
+      }
       queryClient.invalidateQueries({ queryKey: ["recurrences"] });
       setModalOpen(false);
-      setForm({ ...form, title: "", amount: "", category: "" });
+      setForm(EMPTY_FORM);
     } catch (err) {
-      setError(extractErrorMessage(err, "Não foi possível criar a recorrência."));
+      setError(extractErrorMessage(err, "Não foi possível salvar a recorrência."));
     } finally {
       setIsSubmitting(false);
     }
@@ -108,35 +137,35 @@ export function RecurrencesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Recorrências</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="text-3xl font-semibold text-tinta dark:text-papel">Recorrências</h1>
+          <p className="text-sm text-cinza dark:text-papel/60">
             Salário, aluguel e assinaturas: lançamentos que se repetem sozinhos.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="secondary" className="gap-1.5" onClick={handleGenerateNow}>
             <RefreshCw size={14} />
             Gerar lançamentos pendentes
           </Button>
-          <Button onClick={() => setModalOpen(true)}>+ Nova recorrência</Button>
+          <Button onClick={openCreateModal}>+ Nova recorrência</Button>
         </div>
       </div>
 
       {rules && rules.length > 0 && (
-        <div className="flex gap-10">
+        <div className="flex flex-wrap gap-6 sm:gap-10">
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Entra por mês</p>
-            <p className="font-serif text-3xl font-medium text-green-700">{formatCurrency(monthlyIn)}</p>
+            <p className="text-sm text-cinza dark:text-papel/60">Entra por mês</p>
+            <p className="font-serif text-3xl font-medium text-receita">{formatCurrency(monthlyIn)}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Sai por mês</p>
-            <p className="font-serif text-3xl font-medium text-red-600">{formatCurrency(monthlyOut)}</p>
+            <p className="text-sm text-cinza dark:text-papel/60">Sai por mês</p>
+            <p className="font-serif text-3xl font-medium text-despesa">{formatCurrency(monthlyOut)}</p>
           </div>
           <div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Pausadas</p>
-            <p className="font-serif text-3xl font-medium text-slate-900 dark:text-slate-100">{pausedCount}</p>
+            <p className="text-sm text-cinza dark:text-papel/60">Pausadas</p>
+            <p className="font-serif text-3xl font-medium text-tinta dark:text-papel">{pausedCount}</p>
           </div>
         </div>
       )}
@@ -147,9 +176,9 @@ export function RecurrencesPage() {
       )}
 
       {rules && rules.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="overflow-x-auto rounded-xl border border-cinza/15 dark:border-papel/10">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+            <thead className="bg-nevoa/40 text-xs uppercase text-cinza dark:bg-noite-clara dark:text-papel/60">
               <tr>
                 <th className="px-4 py-3">Nome</th>
                 <th className="px-4 py-3">Frequência</th>
@@ -158,18 +187,18 @@ export function RecurrencesPage() {
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-cinza/15 dark:divide-papel/10">
               {rules.map((rule) => (
                 <tr key={rule.id}>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{rule.title}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="font-medium text-tinta dark:text-papel">{rule.title}</p>
+                    <p className="text-xs text-cinza dark:text-papel/60">
                       {allCategories.find((category) => category.id === rule.category)?.name ?? ""}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{frequencyDetail(rule)}</td>
+                  <td className="px-4 py-3 text-cinza dark:text-papel/60">{frequencyDetail(rule)}</td>
                   <td
-                    className={`px-4 py-3 font-medium ${rule.transaction_type === "EXPENSE" ? "text-red-600" : "text-green-700"}`}
+                    className={`px-4 py-3 font-medium ${rule.transaction_type === "EXPENSE" ? "text-despesa" : "text-receita"}`}
                   >
                     {rule.transaction_type === "EXPENSE" ? "-" : "+"}
                     {formatCurrency(rule.amount)}
@@ -181,12 +210,12 @@ export function RecurrencesPage() {
                       aria-checked={rule.is_active}
                       onClick={() => handleToggleActive(rule.id, rule.is_active)}
                       className={`relative h-6 w-11 rounded-full transition-colors ${
-                        rule.is_active ? "bg-slate-800 dark:bg-slate-100" : "bg-slate-200 dark:bg-slate-700"
+                        rule.is_active ? "bg-petroleo" : "bg-cinza/30 dark:bg-noite-borda"
                       }`}
                     >
                       <span
-                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform dark:bg-slate-900 ${
-                          rule.is_active ? "translate-x-5" : "translate-x-0.5"
+                        className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          rule.is_active ? "translate-x-5" : "translate-x-0"
                         }`}
                       />
                     </button>
@@ -195,10 +224,19 @@ export function RecurrencesPage() {
                     <div className="flex items-center justify-end gap-1">
                       <button
                         type="button"
+                        onClick={() => openEditModal(rule)}
+                        aria-label="Editar"
+                        title="Editar"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-cinza hover:bg-nevoa dark:text-papel/60 dark:hover:bg-noite-borda"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleRemove(rule.id)}
                         aria-label="Remover"
                         title="Remover"
-                        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950 dark:hover:text-red-400"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-cinza hover:bg-despesa/10 hover:text-despesa dark:text-papel/60"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -211,7 +249,7 @@ export function RecurrencesPage() {
         </div>
       )}
 
-      <Modal title="Nova recorrência" isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
+      <Modal title={editingRuleId ? "Editar recorrência" : "Nova recorrência"} isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
         <div className="flex flex-col gap-4">
           <Select
             label="Tipo"
@@ -254,9 +292,9 @@ export function RecurrencesPage() {
             value={form.start_date}
             onChange={(e) => setForm({ ...form, start_date: e.target.value })}
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button onClick={handleCreate} isLoading={isSubmitting}>
-            Criar
+          {error && <p className="text-sm text-despesa">{error}</p>}
+          <Button onClick={handleSave} isLoading={isSubmitting}>
+            {editingRuleId ? "Salvar" : "Criar"}
           </Button>
         </div>
       </Modal>

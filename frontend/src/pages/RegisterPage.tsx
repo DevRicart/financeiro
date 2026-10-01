@@ -34,37 +34,36 @@ export function RegisterPage() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      noValidate
-      className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-    >
-      <Input label="Nome" {...register("preferred_name")} error={errors.preferred_name?.message} />
-      <Input label="E-mail" type="email" {...register("email")} error={errors.email?.message} />
-      <Input
-        label="Senha"
-        type="password"
-        revealable
-        {...register("password")}
-        error={errors.password?.message}
-      />
-      <Input
-        label="Confirmar senha"
-        type="password"
-        revealable
-        {...register("confirm_password")}
-        error={errors.confirm_password?.message}
-      />
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
-      <Button type="submit" isLoading={isSubmitting}>
-        Criar conta
-      </Button>
-      <p className="text-center text-sm text-slate-600 dark:text-slate-400">
-        Já tem conta?{" "}
-        <Link to="/login" className="font-medium text-slate-900 underline dark:text-slate-100">
-          Entrar
-        </Link>
-      </p>
-    </form>
+    <div className="flex flex-col gap-8">
+      <h1 className="font-serif text-4xl font-medium text-tinta dark:text-papel">Criar conta</h1>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+        <Input label="Nome" {...register("preferred_name")} error={errors.preferred_name?.message} />
+        <Input label="E-mail" type="email" {...register("email")} error={errors.email?.message} />
+        <Input
+          label="Senha"
+          type="password"
+          revealable
+          {...register("password")}
+          error={errors.password?.message}
+        />
+        <Input
+          label="Confirmar senha"
+          type="password"
+          revealable
+          {...register("confirm_password")}
+          error={errors.confirm_password?.message}
+        />
+        {serverError && <p className="text-sm text-despesa">{serverError}</p>}
+        <Button type="submit" isLoading={isSubmitting} className="w-full">
+          Criar conta
+        </Button>
+        <p className="text-center text-sm text-cinza dark:text-papel/70">
+          Já tem conta?{" "}
+          <Link to="/login" className="font-medium text-petroleo underline dark:text-luz">
+            Entrar
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }

@@ -1,26 +1,28 @@
 import { api } from "./api";
 import type { RecurrenceRule } from "../types/transaction";
 
+interface RecurrenceRulePayload {
+  title: string;
+  transaction_type: "INCOME" | "EXPENSE";
+  amount: string;
+  category: number;
+  frequency: "WEEKLY" | "MONTHLY" | "YEARLY";
+  start_date: string;
+  end_date?: string | null;
+}
+
 export const recurrencesService = {
   async list() {
     const { data } = await api.get<RecurrenceRule[]>("/recurrences/");
     return data;
   },
 
-  async create(payload: {
-    title: string;
-    transaction_type: "INCOME" | "EXPENSE";
-    amount: string;
-    category: number;
-    frequency: "WEEKLY" | "MONTHLY" | "YEARLY";
-    start_date: string;
-    end_date?: string | null;
-  }) {
+  async create(payload: RecurrenceRulePayload) {
     const { data } = await api.post<RecurrenceRule>("/recurrences/", payload);
     return data;
   },
 
-  async update(id: number, payload: Partial<{ is_active: boolean }>) {
+  async update(id: number, payload: Partial<RecurrenceRulePayload & { is_active: boolean }>) {
     const { data } = await api.patch<RecurrenceRule>(`/recurrences/${id}/`, payload);
     return data;
   },

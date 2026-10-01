@@ -30,40 +30,39 @@ export function LoginPage() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      noValidate
-      className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-    >
-      <Input label="E-mail" type="email" autoComplete="email" {...register("email")} error={errors.email?.message} />
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Senha
-          </label>
-          <Link to="/forgot-password" className="text-sm font-medium text-slate-600 hover:underline dark:text-slate-400">
-            Esqueci minha senha
-          </Link>
+    <div className="flex flex-col gap-8">
+      <h1 className="font-serif text-4xl font-medium text-tinta dark:text-papel">Entrar</h1>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+        <Input label="E-mail" type="email" autoComplete="email" {...register("email")} error={errors.email?.message} />
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="text-sm font-medium text-tinta dark:text-papel">
+              Senha
+            </label>
+            <Link to="/forgot-password" className="text-sm font-medium text-petroleo hover:underline dark:text-luz">
+              Esqueci minha senha
+            </Link>
+          </div>
+          <Input
+            id="password"
+            type="password"
+            revealable
+            autoComplete="current-password"
+            {...register("password")}
+            error={errors.password?.message}
+          />
         </div>
-        <Input
-          id="password"
-          type="password"
-          revealable
-          autoComplete="current-password"
-          {...register("password")}
-          error={errors.password?.message}
-        />
-      </div>
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
-      <Button type="submit" isLoading={isSubmitting}>
-        Entrar
-      </Button>
-      <p className="text-center text-sm text-slate-600 dark:text-slate-400">
-        Não tem conta?{" "}
-        <Link to="/register" className="font-medium text-slate-900 underline dark:text-slate-100">
-          Criar conta
-        </Link>
-      </p>
-    </form>
+        {serverError && <p className="text-sm text-despesa">{serverError}</p>}
+        <Button type="submit" isLoading={isSubmitting} className="w-full">
+          Entrar
+        </Button>
+        <p className="text-center text-sm text-cinza dark:text-papel/70">
+          Não tem conta?{" "}
+          <Link to="/register" className="font-medium text-petroleo underline dark:text-luz">
+            Criar conta
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }

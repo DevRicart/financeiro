@@ -44,13 +44,30 @@ def test_user_can_update_and_delete_own_category(auth_client, user):
 
 
 @pytest.mark.django_db
-def test_user_cannot_modify_a_default_category(auth_client):
+def test_user_can_edit_and_delete_a_default_category(auth_client):
+    # Categories are shared household setup, not private data — either
+    # partner can rename or remove the seeded defaults, same as their own.
     default_category = Category.objects.create(
         owner=None, name="Mercado", category_type=Category.CategoryType.EXPENSE, is_default=True
     )
 
-    response = auth_client.patch(f"/api/categories/{default_category.id}/", {"name": "Hackeado"})
-    assert response.status_code == 403
+    update_response = auth_client.patch(f"/api/categories/{default_category.id}/", {"name": "Supermercado"})
+    assert update_response.status_code == 200
+    assert update_response.data["name"] == "Supermercado"
+
+    delete_response = auth_client.delete(f"/api/categories/{default_category.id}/")
+    assert delete_response.status_code == 204
+
+
+@pytest.mark.django_db
+def test_cannot_modify_another_users_category(auth_client):
+    other_user = User.objects.create_user(email="bob@example.com", username="bob", password="SenhaForte123")
+    other_category = Category.objects.create(
+        owner=other_user, name="Particular do Bob", category_type=Category.CategoryType.EXPENSE
+    )
+
+    response = auth_client.patch(f"/api/categories/{other_category.id}/", {"name": "Hackeado"})
+    assert response.status_code == 404
 
 
 @pytest.mark.django_db

@@ -170,13 +170,13 @@ export function TransactionFormPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="mb-6 text-3xl font-semibold text-slate-900 dark:text-slate-100">
+      <h1 className="mb-6 text-3xl font-semibold text-tinta dark:text-papel">
         {isEditMode ? "Editar transação" : "Nova transação"}
       </h1>
       <form
         onSubmit={handleSubmit(onSubmit)}
         noValidate
-        className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+        className="flex flex-col gap-4 rounded-xl border border-cinza/15 bg-white p-6 dark:border-papel/10 dark:bg-noite-clara"
       >
         <Select label="Tipo" {...register("transaction_type")}>
           <option value="EXPENSE">Despesa</option>
@@ -233,7 +233,7 @@ export function TransactionFormPage() {
         )}
 
         {transactionType === "INCOME" && incomeType === "SALARY" && (
-          <div className="flex flex-col gap-4 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+          <div className="flex flex-col gap-4 rounded-lg border border-cinza/15 p-3 dark:border-papel/10">
             <Input label="Empresa" {...register("salary_employer_name")} />
             <Input
               label="Valor líquido (R$)"
@@ -246,7 +246,7 @@ export function TransactionFormPage() {
         )}
 
         {transactionType === "INCOME" && incomeType === "APPOINTMENT" && (
-          <div className="flex flex-col gap-4 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+          <div className="flex flex-col gap-4 rounded-lg border border-cinza/15 p-3 dark:border-papel/10">
             <Select label="Cliente/paciente (opcional)" {...register("service_client")} defaultValue="">
               <option value="">Nenhum</option>
               {clients?.map((client) => (
@@ -262,7 +262,7 @@ export function TransactionFormPage() {
         )}
 
         {transactionType === "INCOME" && incomeType === "FREELANCE" && (
-          <div className="flex flex-col gap-4 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+          <div className="flex flex-col gap-4 rounded-lg border border-cinza/15 p-3 dark:border-papel/10">
             <Select label="Cliente (opcional)" {...register("freelance_client")} defaultValue="">
               <option value="">Nenhum</option>
               {clients?.map((client) => (
@@ -277,12 +277,12 @@ export function TransactionFormPage() {
           </div>
         )}
 
-        <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+        <label className="flex items-center gap-2 text-sm text-cinza dark:text-papel/70">
           <input type="checkbox" {...register("is_shared")} />
           Compartilhada com o parceiro
         </label>
 
-        {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+        {serverError && <p className="text-sm text-despesa">{serverError}</p>}
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => navigate("/app/transactions")}>

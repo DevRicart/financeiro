@@ -144,8 +144,8 @@ export function ImportsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100">Importar extrato</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="text-3xl font-semibold text-tinta dark:text-papel">Importar extrato</h1>
+        <p className="text-sm text-cinza dark:text-papel/60">
           Exporte o extrato do seu banco (OFX — a maioria dos bancos — ou CSV do PicPay) e envie aqui —
           organize a categoria e descrição de cada movimentação antes dela virar uma transação real.
         </p>
@@ -179,9 +179,9 @@ export function ImportsPage() {
             Importar
           </Button>
         </form>
-        {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
+        {uploadError && <p className="mt-2 text-sm text-despesa">{uploadError}</p>}
         {(!accountsQuery.data || accountsQuery.data.length === 0) && !accountsQuery.isLoading && (
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-2 text-sm text-cinza dark:text-papel/60">
             Cadastre uma conta financeira antes de importar um extrato.
           </p>
         )}
@@ -189,15 +189,15 @@ export function ImportsPage() {
 
       {historyQuery.data && historyQuery.data.length > 0 && (
         <div>
-          <h2 className="mb-3 font-semibold text-slate-900 dark:text-slate-100">Importações recentes</h2>
+          <h2 className="mb-3 font-semibold text-tinta dark:text-papel">Importações recentes</h2>
           <div className="flex flex-wrap gap-3">
             {historyQuery.data.map((item) => (
               <Card key={item.id} className="flex items-center gap-3">
                 <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  <p className="text-sm font-medium text-tinta dark:text-papel">
                     {item.file_name || "extrato.ofx"} · {item.account_name}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-cinza dark:text-papel/60">
                     {formatDate(item.imported_at.slice(0, 10))} · {item.transaction_count} lançamento(s)
                   </p>
                 </div>
@@ -209,11 +209,11 @@ export function ImportsPage() {
 
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold text-slate-900 dark:text-slate-100">
+          <h2 className="font-semibold text-tinta dark:text-papel">
             Aguardando revisão {items.length > 0 && `· ${items.length} movimentação(ões)`}
           </h2>
           {items.length > 0 && (
-            <label className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+            <label className="flex items-center gap-2 text-sm text-cinza dark:text-papel/60">
               <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
               Selecionar todas
             </label>
@@ -221,8 +221,8 @@ export function ImportsPage() {
         </div>
 
         {selectedIds.size > 0 && (
-          <div className="mb-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
-            <span className="text-sm text-slate-600 dark:text-slate-400">
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-cinza/15 bg-nevoa/40 px-4 py-2 dark:border-papel/10 dark:bg-noite-clara">
+            <span className="text-sm text-cinza dark:text-papel/70">
               {selectedIds.size} selecionada(s)
               {selectedWithCategory.length < selectedIds.size &&
                 ` · ${selectedIds.size - selectedWithCategory.length} sem categoria`}
@@ -265,7 +265,7 @@ export function ImportsPage() {
         </div>
 
         {items.length > 0 && (
-          <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
+          <p className="mt-3 text-xs text-cinza/70 dark:text-papel/40">
             Escolha uma categoria para liberar o botão Confirmar.
           </p>
         )}
@@ -319,10 +319,10 @@ function ImportRow({
       <input type="checkbox" checked={selected} onChange={onToggleSelect} className="md:mr-1" />
 
       <div className="md:w-40">
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-cinza dark:text-papel/60">
           {formatDate(item.date)} · {item.account_name}
         </p>
-        <p className={`text-lg font-semibold ${isExpense ? "text-red-600" : "text-green-600"}`}>
+        <p className={`text-lg font-semibold ${isExpense ? "text-despesa" : "text-receita"}`}>
           {formatCurrency(item.amount)}
         </p>
       </div>

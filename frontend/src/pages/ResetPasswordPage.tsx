@@ -33,39 +33,41 @@ export function ResetPasswordPage() {
 
   if (!uid || !token) {
     return (
-      <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <p className="text-sm text-red-600">Link inválido. Peça um novo link de redefinição.</p>
-        <Link to="/forgot-password" className="text-center text-sm font-medium text-slate-900 underline dark:text-slate-100">
-          Esqueci minha senha
-        </Link>
+      <div className="flex flex-col gap-8">
+        <h1 className="font-serif text-4xl font-medium text-tinta dark:text-papel">Link inválido</h1>
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-despesa">Peça um novo link de redefinição.</p>
+          <Link to="/forgot-password" className="text-center text-sm font-medium text-petroleo underline dark:text-luz">
+            Esqueci minha senha
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      noValidate
-      className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-    >
-      <Input
-        label="Nova senha"
-        type="password"
-        revealable
-        {...register("password")}
-        error={errors.password?.message}
-      />
-      <Input
-        label="Confirmar nova senha"
-        type="password"
-        revealable
-        {...register("confirm_password")}
-        error={errors.confirm_password?.message}
-      />
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
-      <Button type="submit" isLoading={isSubmitting}>
-        Redefinir senha
-      </Button>
-    </form>
+    <div className="flex flex-col gap-8">
+      <h1 className="font-serif text-4xl font-medium text-tinta dark:text-papel">Redefinir senha</h1>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+        <Input
+          label="Nova senha"
+          type="password"
+          revealable
+          {...register("password")}
+          error={errors.password?.message}
+        />
+        <Input
+          label="Confirmar nova senha"
+          type="password"
+          revealable
+          {...register("confirm_password")}
+          error={errors.confirm_password?.message}
+        />
+        {serverError && <p className="text-sm text-despesa">{serverError}</p>}
+        <Button type="submit" isLoading={isSubmitting} className="w-full">
+          Redefinir senha
+        </Button>
+      </form>
+    </div>
   );
 }
