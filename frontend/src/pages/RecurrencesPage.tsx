@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui/Button";
+import { CurrencyInput } from "../components/ui/CurrencyInput";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Input } from "../components/ui/Input";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
@@ -270,10 +271,8 @@ export function RecurrencesPage() {
               </option>
             ))}
           </Select>
-          <Input
+          <CurrencyInput
             label="Valor (R$)"
-            inputMode="decimal"
-            placeholder="0,00"
             value={form.amount}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
           />

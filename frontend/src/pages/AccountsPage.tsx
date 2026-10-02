@@ -4,6 +4,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "../components/ui/Button";
+import { CurrencyInput } from "../components/ui/CurrencyInput";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Input } from "../components/ui/Input";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
@@ -197,10 +198,9 @@ export function AccountsPage() {
               </option>
             ))}
           </Select>
-          <Input
+          <CurrencyInput
             label="Saldo inicial (opcional)"
-            inputMode="decimal"
-            placeholder="0,00"
+            allowNegative
             {...register("initial_balance")}
             error={errors.initial_balance?.message}
           />

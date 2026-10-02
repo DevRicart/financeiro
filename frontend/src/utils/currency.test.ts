@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCurrency, parseCurrencyInput } from "./currency";
+import { formatCurrency, parseCurrencyInput, sanitizeCurrencyInput } from "./currency";
 
 // Intl.NumberFormat inserts a non-breaking space (U+00A0) between "R$" and
 // the number — correct, but easy to misspell as a regular space in a test
@@ -57,5 +57,56 @@ describe("parseCurrencyInput", () => {
 
   it("round-trips back into a valid positive Number", () => {
     expect(Number(parseCurrencyInput("1.234,56"))).toBeCloseTo(1234.56);
+  });
+});
+
+describe("sanitizeCurrencyInput", () => {
+  it("keeps a comma-decimal amount as typed", () => {
+    expect(sanitizeCurrencyInput("12,50")).toBe("12,50");
+  });
+
+  it("keeps a trailing comma so the user can keep typing the decimals", () => {
+    expect(sanitizeCurrencyInput("12,")).toBe("12,");
+  });
+
+  it("turns a lone dot into the decimal comma (keypads without a comma key)", () => {
+    expect(sanitizeCurrencyInput("12.5")).toBe("12,5");
+    expect(sanitizeCurrencyInput("12.50")).toBe("12,50");
+  });
+
+  it("blocks a third decimal place", () => {
+    expect(sanitizeCurrencyInput("12,505")).toBe("12,50");
+    expect(sanitizeCurrencyInput("12.505")).toBe("12,50");
+  });
+
+  it("accepts only one decimal separator", () => {
+    expect(sanitizeCurrencyInput("12,3,4")).toBe("12,34");
+    expect(sanitizeCurrencyInput("12,5.")).toBe("12,5");
+  });
+
+  it("drops thousands separators from a pasted formatted amount", () => {
+    expect(sanitizeCurrencyInput("1.234,56")).toBe("1234,56");
+    expect(sanitizeCurrencyInput("1.234.567")).toBe("1234567");
+    expect(sanitizeCurrencyInput("R$ 1.234,56")).toBe("1234,56");
+  });
+
+  it("strips letters and symbols", () => {
+    expect(sanitizeCurrencyInput("abc12x")).toBe("12");
+    expect(sanitizeCurrencyInput("")).toBe("");
+  });
+
+  it("prefixes a zero when the amount starts with the separator", () => {
+    expect(sanitizeCurrencyInput(",5")).toBe("0,5");
+    expect(sanitizeCurrencyInput(".5")).toBe("0,5");
+  });
+
+  it("strips a minus sign unless negative values are allowed", () => {
+    expect(sanitizeCurrencyInput("-5,5")).toBe("5,5");
+    expect(sanitizeCurrencyInput("-5,5", { allowNegative: true })).toBe("-5,5");
+  });
+
+  it("produces a value parseCurrencyInput turns into a valid API decimal", () => {
+    expect(parseCurrencyInput(sanitizeCurrencyInput("1.234,56"))).toBe("1234.56");
+    expect(parseCurrencyInput(sanitizeCurrencyInput("12.5"))).toBe("12.5");
   });
 });

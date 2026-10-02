@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { z } from "zod";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
+import { CurrencyInput } from "../components/ui/CurrencyInput";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Input } from "../components/ui/Input";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
@@ -291,10 +292,8 @@ export function TransactionsPage() {
               </option>
             ))}
           </Select>
-          <Input
+          <CurrencyInput
             label="Valor total (R$)"
-            inputMode="decimal"
-            placeholder="0,00"
             {...register("total_amount")}
             error={errors.total_amount?.message}
           />

@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { CurrencyInput } from "../components/ui/CurrencyInput";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Input } from "../components/ui/Input";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
@@ -395,10 +396,8 @@ export function DebtsPage() {
             <option value="PAYABLE">Eu devo (a pagar)</option>
             <option value="RECEIVABLE">Me devem (a receber)</option>
           </Select>
-          <Input
+          <CurrencyInput
             label="Valor (R$)"
-            inputMode="decimal"
-            placeholder="0,00"
             {...register("total_amount")}
             error={errors.total_amount?.message}
           />
@@ -430,10 +429,8 @@ export function DebtsPage() {
             <option value="PAYABLE">Eu devo (a pagar)</option>
             <option value="RECEIVABLE">Me devem (a receber)</option>
           </Select>
-          <Input
+          <CurrencyInput
             label="Valor (R$)"
-            inputMode="decimal"
-            placeholder="0,00"
             value={recurrenceForm.amount}
             onChange={(e) => setRecurrenceForm({ ...recurrenceForm, amount: e.target.value })}
           />
@@ -548,8 +545,8 @@ function DebtCard({
       {!isSettled &&
         (payingDebtId === debt.id ? (
           <div className="mt-3 flex gap-2">
-            <Input
-              placeholder="0,00"
+            <CurrencyInput
+              aria-label="Valor do pagamento"
               value={paymentAmount}
               onChange={(event) => setPaymentAmount(event.target.value)}
               className="flex-1"

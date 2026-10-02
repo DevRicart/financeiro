@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../components/ui/Button";
+import { CurrencyInput } from "../components/ui/CurrencyInput";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Input } from "../components/ui/Input";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
@@ -236,10 +237,8 @@ export function BudgetsPage() {
               </option>
             ))}
           </Select>
-          <Input
+          <CurrencyInput
             label="Limite mensal (R$)"
-            inputMode="decimal"
-            placeholder="0,00"
             value={form.limit_amount}
             onChange={(e) => setForm({ ...form, limit_amount: e.target.value })}
           />

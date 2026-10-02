@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { CurrencyInput } from "../components/ui/CurrencyInput";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Input } from "../components/ui/Input";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
@@ -145,8 +146,8 @@ export function GoalsPage() {
 
             {contributingGoalId === goal.id ? (
               <div className="mt-3 flex gap-2">
-                <Input
-                  placeholder="0,00"
+                <CurrencyInput
+                  aria-label="Valor a guardar"
                   value={contributionAmount}
                   onChange={(event) => setContributionAmount(event.target.value)}
                   className="flex-1"
@@ -169,10 +170,8 @@ export function GoalsPage() {
             <option value="INDIVIDUAL">Individual</option>
             <option value="SHARED">Compartilhada</option>
           </Select>
-          <Input
+          <CurrencyInput
             label="Valor alvo (R$)"
-            inputMode="decimal"
-            placeholder="0,00"
             {...register("target_amount")}
             error={errors.target_amount?.message}
           />

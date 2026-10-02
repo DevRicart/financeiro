@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/Button";
+import { CurrencyInput } from "../components/ui/CurrencyInput";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import { transactionSchema, type TransactionFormData } from "../schemas/transaction.schema";
@@ -195,10 +196,8 @@ export function TransactionFormPage() {
         </Select>
 
         <Input label="Descrição" {...register("title")} error={errors.title?.message} />
-        <Input
+        <CurrencyInput
           label="Valor (R$)"
-          inputMode="decimal"
-          placeholder="0,00"
           {...register("total_amount")}
           error={errors.total_amount?.message}
         />
@@ -235,10 +234,8 @@ export function TransactionFormPage() {
         {transactionType === "INCOME" && incomeType === "SALARY" && (
           <div className="flex flex-col gap-4 rounded-lg border border-cinza/15 p-3 dark:border-papel/10">
             <Input label="Empresa" {...register("salary_employer_name")} />
-            <Input
+            <CurrencyInput
               label="Valor líquido (R$)"
-              inputMode="decimal"
-              placeholder="0,00"
               {...register("salary_net_amount")}
             />
             <Input label="Mês de referência" type="date" {...register("salary_reference_month")} />
