@@ -109,6 +109,13 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    # Scopes used by apps.accounts.throttles. Only the endpoints that send
+    # e-mail (or create accounts) opt in; the rest of the API is unthrottled.
+    "DEFAULT_THROTTLE_RATES": {
+        "register": "10/hour",  # per IP
+        "email_send": "20/hour",  # per IP (resend verification, password reset)
+        "email_address": "5/hour",  # per target e-mail address, from any IP
+    },
 }
 
 SIMPLE_JWT = {
@@ -128,6 +135,9 @@ EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+# Without a timeout Django waits on the SMTP server forever, and a provider
+# hiccup would hang the gunicorn worker serving the sign-up request.
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=10)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="no-reply@financeiro.local")
 
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")

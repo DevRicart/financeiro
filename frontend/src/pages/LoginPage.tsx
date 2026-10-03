@@ -2,16 +2,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
+import { ResendVerification } from "../components/auth/ResendVerification";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { useAuth } from "../hooks/useAuth";
 import { loginSchema, type LoginFormData } from "../schemas/auth.schema";
-import { extractErrorMessage } from "../utils/errors";
+import { extractErrorMessage, getErrorCode } from "../utils/errors";
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const {
     register,
@@ -21,11 +23,13 @@ export function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     setServerError(null);
+    setUnverifiedEmail(null);
     try {
       await login(data.email, data.password);
       navigate("/app/dashboard");
     } catch (error) {
       setServerError(extractErrorMessage(error, "E-mail ou senha inválidos."));
+      if (getErrorCode(error) === "email_not_verified") setUnverifiedEmail(data.email);
     }
   };
 
@@ -53,6 +57,7 @@ export function LoginPage() {
           />
         </div>
         {serverError && <p className="text-sm text-despesa">{serverError}</p>}
+        {unverifiedEmail && <ResendVerification email={unverifiedEmail} />}
         <Button type="submit" isLoading={isSubmitting} className="w-full">
           Entrar
         </Button>

@@ -21,6 +21,7 @@ import { ReportsPage } from "../pages/ReportsPage";
 import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 import { TransactionFormPage } from "../pages/TransactionFormPage";
 import { TransactionsPage } from "../pages/TransactionsPage";
+import { VerifyEmailPage } from "../pages/VerifyEmailPage";
 import { ProtectedRoute } from "./protected-route";
 import { PublicRoute } from "./public-route";
 
@@ -35,6 +36,11 @@ export function AppRoutes() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>
+      </Route>
+
+      {/* Outside PublicRoute on purpose: the link has to work even if this browser still has a session. */}
+      <Route element={<AuthLayout />}>
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
       </Route>
 
       <Route element={<ProtectedRoute />}>

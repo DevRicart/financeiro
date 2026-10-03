@@ -1,0 +1,23 @@
+{% extends "emails/base.html" %}
+
+{% block title %}{{ heading }}{% endblock %}
+{% block preheader %}{{ preheader }}{% endblock %}
+
+{% block content %}
+<h1 style="margin:0 0 16px 0;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:32px;font-weight:500;color:#18221F;">{{ heading }}</h1>
+{% for paragraph in paragraphs %}
+<p style="margin:0 0 16px 0;">{{ paragraph }}</p>
+{% endfor %}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
+  <tr>
+    <td style="background-color:#1D4A40;border-radius:8px;">
+      <a href="{{ action_url }}" style="display:inline-block;padding:12px 24px;font-size:15px;line-height:20px;font-weight:600;color:#FFFFFF;text-decoration:none;">{{ action_label }}</a>
+    </td>
+  </tr>
+</table>
+<p style="margin:0 0 4px 0;font-size:13px;line-height:20px;color:#5B6560;">Se o botão não funcionar, copie e cole este endereço no navegador:</p>
+<p style="margin:0 0 16px 0;font-size:13px;line-height:20px;word-break:break-all;"><a href="{{ action_url }}" style="color:#1D4A40;">{{ action_url }}</a></p>
+{% if footnote %}
+<p style="margin:0;font-size:13px;line-height:20px;color:#5B6560;">{{ footnote }}</p>
+{% endif %}
+{% endblock %}

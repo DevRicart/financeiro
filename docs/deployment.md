@@ -154,8 +154,50 @@ Teste em `https://financeiro.seudominio.com.br`.
 (crontab -l 2>/dev/null; echo "0 3 * * * cd /opt/financeiro && docker compose -f docker-compose.prod.yml run --rm certbot renew --quiet && docker compose -f docker-compose.prod.yml restart nginx") | crontab -
 ```
 
+## E-mail transacional (confirmação de conta e recuperação de senha)
+
+O Lumi Finance envia e-mail em dois momentos: o link de **confirmação de e-mail** (quem cria uma conta só consegue entrar depois de clicar nele) e o de **redefinição de senha**. Em produção o envio é por SMTP; este guia usa o [Resend](https://resend.com) com o domínio `lumifinance.com.br`.
+
+### a. Resend: domínio verificado e chave de API
+
+1. Em **Domains**, adicione o domínio e crie no DNS (Cloudflare) os registros que o Resend mostrar (SPF e DKIM). Registros de e-mail ficam sempre em **"DNS only"** (nuvem cinza) — não passam pelo proxy do Cloudflare. Espere o status **Verified**.
+2. Em **API Keys**, crie uma chave com permissão **Sending access** e copie-a (ela só aparece uma vez).
+3. **DMARC:** antes de criar qualquer coisa, veja se o domínio já tem um: `nslookup -type=TXT _dmarc.lumifinance.com.br`. Se já existir, mantenha-o — não troque por uma política mais fraca (o `lumifinance.com.br` já tem `p=reject`). Se não existir, crie um `TXT` em `_dmarc` com `v=DMARC1; p=none;` (só observa, não bloqueia nada) e endureça depois que os e-mails estiverem passando. Com `p=reject`, e-mail que falha no DMARC é recusado pelo Gmail/Outlook (nem chega ao spam), por isso o teste do passo **c** abaixo precisa mostrar `DMARC: PASS`.
+
+### b. Variáveis no `.env` da VPS
+
+```
+EMAIL_HOST=smtp.resend.com
+EMAIL_PORT=587
+EMAIL_HOST_USER=resend
+EMAIL_HOST_PASSWORD=re_xxxxxxxxxxxx
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=Lumi Finance <nao-responda@lumifinance.com.br>
+FRONTEND_URL=https://lumifinance.com.br
+```
+
+`EMAIL_HOST_PASSWORD` é a chave de API do passo anterior. O remetente precisa ser do domínio verificado. `FRONTEND_URL` monta os links dos e-mails, então use o endereço público do site, sem barra no final.
+
+### c. Testar o envio antes de publicar o código novo
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --force-recreate backend
+docker compose -f docker-compose.prod.yml exec backend python manage.py sendtestemail seu-email@gmail.com
+```
+
+Se chegar (olhe o spam também), o SMTP está certo. Confira também a autenticação: no Gmail, abra o e-mail → menu ⋮ → **Mostrar original** e veja se `SPF`, `DKIM` e `DMARC` aparecem como `PASS`. Se der erro, leia `docker compose -f docker-compose.prod.yml logs backend`. Só depois disso rode `./infrastructure/scripts/deploy.sh`: com a confirmação ligada, um SMTP quebrado impede contas novas de entrar.
+
+### d. Como a confirmação funciona
+
+- **Contas que já existiam** são marcadas como verificadas pela própria migração — ninguém fica trancado para fora no deploy.
+- **Contas novas** não recebem sessão ao se cadastrar: veem a tela "Confirme seu e-mail", e o login responde "Confirme seu e-mail" (com botão de reenviar) até o link ser aberto. O link vale 48 horas.
+- **Redefinir a senha** por e-mail também confirma o endereço, já que o link só chegou à caixa de entrada.
+- **Limites de tentativa** (por IP e por endereço) protegem cadastro, reenvio e redefinição de senha contra uso para spam. Os contadores ficam num cache em arquivo compartilhado pelos 3 workers do gunicorn. Se um dia ligar o proxy do Cloudflare (nuvem laranja), defina `NUM_PROXIES=2` no `.env`, senão o IP lido passa a ser o do Cloudflare.
+- **Liberar alguém na mão** (o e-mail nunca chegou): `/admin/` → Usuários → preencha "E-mail verificado em" com a data/hora atual.
+
 ## Troubleshooting
 
+- **E-mail de confirmação/redefinição não chega:** veja `docker compose -f docker-compose.prod.yml logs backend` — falhas de envio aparecem como "Falha ao enviar o e-mail" (o cadastro em si não quebra; a pessoa pode pedir "Reenviar"). Confira se o domínio está **Verified** no Resend e se o `DEFAULT_FROM_EMAIL` usa esse domínio.
 - **502 Bad Gateway:** o backend ainda não terminou de subir (rodando migrations) — espere alguns segundos e recarregue, ou veja `docker compose -f docker-compose.prod.yml logs backend`.
 - **Tela em branco / erro logo ao abrir, sem domínio ainda:** confira se `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE` e `CSRF_COOKIE_SECURE` estão como `False` no `.env` — com HTTPS ainda inexistente, os padrões (`True`) bloqueiam a própria página.
 - **CORS bloqueado no navegador:** confira se `CORS_ALLOWED_ORIGINS` no `.env` usa exatamente o mesmo esquema (`http://` ou `https://`) + host que você está usando para acessar o site, sem barra final.

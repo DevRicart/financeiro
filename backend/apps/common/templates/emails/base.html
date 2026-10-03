@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>{% block title %}Lumi Finance{% endblock %}</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#F4F5F2;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F4F5F2;">{% block preheader %}{% endblock %}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F4F5F2;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;">
+            <tr>
+              <td style="padding:0 0 24px 4px;">
+                <img src="{{ logo_url }}" alt="Lumi Finance" width="160" style="display:block;height:auto;border:0;" />
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color:#FFFFFF;border:1px solid #E5EEEA;border-radius:12px;padding:32px 28px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;color:#18221F;">
+                {% block content %}{% endblock %}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 4px 0 4px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:18px;color:#5B6560;">
+                Lumi Finance &middot; Seu mês, linha por linha.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

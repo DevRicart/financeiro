@@ -23,7 +23,7 @@ Veja [docs/architecture.md](docs/architecture.md) para a visão geral de cada ap
 
 ## O que já funciona (validado ponta a ponta)
 
-- Cadastro, login, refresh de token, troca/recuperação de senha
+- Cadastro com confirmação de e-mail (link enviado por e-mail, obrigatório para entrar), login, refresh de token, troca/recuperação de senha
 - Categorias (30 padrão já populadas: despesa e receita)
 - Transações: criar receita/despesa, registrar pagamento/recebimento (total ou parcial), status calculado automaticamente (Pendente → Parcial → Concluída), exclusão
 - Dashboard: saldo do mês, receita/despesa prevista vs. realizada, resultado por caixa e por competência, gráfico de despesas por categoria, evolução mensal
@@ -143,8 +143,8 @@ Reimportar um extrato com datas sobrepostas não duplica lançamentos — cada t
 
 | Camada | Ferramenta | Comando | Cobertura |
 |---|---|---|---|
-| Backend | pytest + pytest-django | `python -m pytest` (dentro de `backend/`, venv ativa) | 48 testes — models, services, permissões entre usuários, exportações, visão do casal |
-| Frontend | Vitest + React Testing Library | `npm test` (dentro de `frontend/`) | 69 testes — utils, schemas Zod, componentes de UI, `AuthContext`, fluxo completo da tela de login |
+| Backend | pytest + pytest-django | `python -m pytest` (dentro de `backend/`, venv ativa) | 96 testes — models, services, permissões entre usuários, exportações, visão do casal, confirmação de e-mail e limites de tentativa |
+| Frontend | Vitest + React Testing Library | `npm test` (dentro de `frontend/`) | 98 testes — utils, schemas Zod, componentes de UI, `AuthContext`, fluxo de login, cadastro e confirmação de e-mail |
 
 Escrever esses testes revelou dois bugs reais que passavam despercebidos em teste manual no navegador:
 

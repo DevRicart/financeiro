@@ -39,6 +39,22 @@ MIDDLEWARE = [
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
+# Throttle counters live in the cache. The default per-process cache would give
+# each of the 3 gunicorn workers its own count (so 3x the intended limit); a
+# file-based cache is shared by all of them without needing Redis.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": "/tmp/django_cache",
+    }
+}
+
+# nginx is the single proxy in front of gunicorn. Telling DRF so makes it read
+# the real client IP from X-Forwarded-For (the entry nginx appended) instead of
+# trusting a value the client could have forged to dodge the rate limits.
+# Raise to 2 if Cloudflare's proxy (orange cloud) is ever turned on.
+REST_FRAMEWORK = {**REST_FRAMEWORK, "NUM_PROXIES": env.int("NUM_PROXIES", default=1)}  # noqa: F405
+
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
 SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=True)
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=True)

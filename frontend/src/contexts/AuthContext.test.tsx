@@ -32,12 +32,13 @@ const fakeUser: User = {
 };
 
 function Probe() {
-  const { user, isLoading, login, logout } = useAuth();
+  const { user, isLoading, login, register, logout } = useAuth();
   return (
     <div>
       <span data-testid="loading">{String(isLoading)}</span>
       <span data-testid="user">{user ? user.email : "none"}</span>
       <button onClick={() => login("ana@example.com", "senha")}>login</button>
+      <button onClick={() => register({ email: "ana@example.com", password: "senha" })}>register</button>
       <button onClick={() => logout()}>logout</button>
     </div>
   );
@@ -97,6 +98,22 @@ describe("AuthProvider", () => {
 
     await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("ana@example.com"));
     expect(mockedAuthService.login).toHaveBeenCalledWith("ana@example.com", "senha");
+  });
+
+  it("does not log the user in after registering — the e-mail has to be confirmed first", async () => {
+    mockedTokenStorage.getAccess.mockReturnValue(null);
+    mockedAuthService.register.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    renderProbe();
+    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
+
+    await user.click(screen.getByText("register"));
+
+    await waitFor(() =>
+      expect(mockedAuthService.register).toHaveBeenCalledWith({ email: "ana@example.com", password: "senha" }),
+    );
+    expect(screen.getByTestId("user")).toHaveTextContent("none");
   });
 
   it("clears the user after logout", async () => {

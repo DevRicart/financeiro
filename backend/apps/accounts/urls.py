@@ -5,6 +5,8 @@ from . import views
 
 urlpatterns = [
     path("register/", views.RegisterView.as_view(), name="auth-register"),
+    path("verify-email/", views.VerifyEmailView.as_view(), name="auth-verify-email"),
+    path("resend-verification/", views.ResendVerificationView.as_view(), name="auth-resend-verification"),
     path("login/", views.LoginView.as_view(), name="auth-login"),
     path("token/refresh/", TokenRefreshView.as_view(), name="auth-token-refresh"),
     path("logout/", views.LogoutView.as_view(), name="auth-logout"),

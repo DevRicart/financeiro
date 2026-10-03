@@ -1,29 +1,59 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.core.mail import send_mail
 from django.conf import settings
+from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from apps.common.emailing import send_action_email
+
 from .serializers import (
     ChangePasswordSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RegisterSerializer,
+    ResendVerificationSerializer,
     UserSerializer,
+    VerifyEmailSerializer,
 )
+from .throttles import EmailAddressThrottle, EmailSendThrottle, RegisterThrottle
+from .verification import send_verification_email, user_from_verification_token
 
 User = get_user_model()
 token_generator = PasswordResetTokenGenerator()
 
 
+class EmailNotVerified(APIException):
+    status_code = status.HTTP_403_FORBIDDEN
+
+    def __init__(self):
+        # The machine-readable `code` lets the frontend offer "resend the
+        # e-mail" instead of just showing a dead-end error.
+        super().__init__(
+            detail={
+                "detail": "Confirme seu e-mail para entrar. Enviamos um link para a sua caixa de entrada.",
+                "code": "email_not_verified",
+            }
+        )
+
+
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        # Runs only after the password was accepted, so "not verified" is never
+        # revealed to someone who doesn't know it — and it runs before any
+        # token or last_login update exists for the rejected attempt.
+        if not user.is_email_verified:
+            raise EmailNotVerified()
+        return super().get_token(user)
+
     def validate(self, attrs):
         data = super().validate(attrs)
         data["user"] = UserSerializer(self.user).data
@@ -39,20 +69,50 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [RegisterThrottle]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        refresh = RefreshToken.for_user(user)
-        return Response(
-            {
-                "user": UserSerializer(user).data,
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        # No tokens here: the account only works after the e-mail is confirmed.
+        # If delivery fails it is logged, and the person can ask for a new link.
+        send_verification_email(user)
+        return Response({"email": user.email}, status=status.HTTP_201_CREATED)
+
+
+class VerifyEmailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = VerifyEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = user_from_verification_token(serializer.validated_data["token"])
+        if user is None:
+            return Response({"detail": "Link inválido ou expirado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Idempotent: opening the same link twice (or a mail client pre-fetching
+        # it) must not turn a successful confirmation into an error.
+        if not user.is_email_verified:
+            user.email_verified_at = timezone.now()
+            user.save(update_fields=["email_verified_at"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ResendVerificationView(APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [EmailSendThrottle, EmailAddressThrottle]
+
+    def post(self, request):
+        serializer = ResendVerificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = User.objects.filter(email__iexact=serializer.validated_data["email"]).first()
+        if user and user.is_active and not user.is_email_verified:
+            send_verification_email(user)
+        # Always 204, so this can't be used to find out which e-mails are registered.
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class MeView(generics.RetrieveUpdateAPIView):
@@ -112,6 +172,7 @@ class LogoutView(APIView):
 
 class PasswordResetRequestView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [EmailSendThrottle, EmailAddressThrottle]
 
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -122,13 +183,19 @@ class PasswordResetRequestView(APIView):
         if user:
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = token_generator.make_token(user)
-            reset_link = f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
-            send_mail(
+            reset_link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?uid={uid}&token={token}"
+            send_action_email(
+                to=user.email,
                 subject="Redefinição de senha — Lumi Finance",
-                message=f"Use o link para redefinir sua senha: {reset_link}",
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                fail_silently=True,
+                heading="Redefinir senha",
+                paragraphs=[
+                    "Recebemos um pedido para redefinir a senha da sua conta no Lumi Finance.",
+                    "O link expira em breve e só pode ser usado uma vez.",
+                ],
+                action_label="Redefinir senha",
+                action_url=reset_link,
+                preheader="Use o link para escolher uma nova senha.",
+                footnote="Se não foi você, é só ignorar este e-mail — sua senha continua a mesma.",
             )
         # Always return 204 so we don't leak which e-mails are registered.
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -152,5 +219,11 @@ class PasswordResetConfirmView(APIView):
             return Response({"detail": "Link inválido ou expirado."}, status=status.HTTP_400_BAD_REQUEST)
 
         user.set_password(data["new_password"])
-        user.save(update_fields=["password"])
+        update_fields = ["password"]
+        # The reset link only ever reached the inbox, so using it proves the
+        # address is theirs — no reason to also make them confirm it again.
+        if not user.is_email_verified:
+            user.email_verified_at = timezone.now()
+            update_fields.append("email_verified_at")
+        user.save(update_fields=update_fields)
         return Response(status=status.HTTP_204_NO_CONTENT)

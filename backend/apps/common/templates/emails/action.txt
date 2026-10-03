@@ -1,0 +1,11 @@
+{% autoescape off %}{{ heading }}
+
+{% for paragraph in paragraphs %}{{ paragraph }}
+
+{% endfor %}{{ action_label }}:
+{{ action_url }}
+
+{% if footnote %}{{ footnote }}
+
+{% endif %}Lumi Finance - Seu mês, linha por linha.
+{% endautoescape %}

@@ -1,13 +1,17 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { AxiosError, type AxiosResponse } from "axios";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../hooks/useAuth";
+import { authService } from "../services/auth.service";
 import { LoginPage } from "./LoginPage";
 
 vi.mock("../hooks/useAuth");
+vi.mock("../services/auth.service");
 
 const mockedUseAuth = vi.mocked(useAuth);
+const mockedAuthService = vi.mocked(authService);
 
 function renderLoginPage() {
   return render(
@@ -71,6 +75,44 @@ describe("LoginPage", () => {
 
     expect(await screen.findByText("E-mail ou senha inválidos.")).toBeInTheDocument();
     expect(screen.queryByText("Dashboard carregado")).not.toBeInTheDocument();
+  });
+
+  it("offers to resend the confirmation e-mail when the account isn't verified yet", async () => {
+    login.mockRejectedValue(
+      new AxiosError("Forbidden", "ERR_BAD_REQUEST", undefined, undefined, {
+        status: 403,
+        data: { detail: "Confirme seu e-mail para entrar.", code: "email_not_verified" },
+      } as AxiosResponse),
+    );
+    mockedAuthService.resendVerification.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderLoginPage();
+
+    await user.type(screen.getByLabelText("E-mail"), "ana@example.com");
+    await user.type(screen.getByLabelText("Senha"), "SenhaForte123");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(await screen.findByText("Confirme seu e-mail para entrar.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Reenviar e-mail de confirmação" }));
+    expect(mockedAuthService.resendVerification).toHaveBeenCalledWith("ana@example.com");
+  });
+
+  it("doesn't offer a resend for an ordinary wrong password", async () => {
+    login.mockRejectedValue(
+      new AxiosError("Unauthorized", "ERR_BAD_REQUEST", undefined, undefined, {
+        status: 401,
+        data: { detail: "E-mail ou senha inválidos." },
+      } as AxiosResponse),
+    );
+    const user = userEvent.setup();
+    renderLoginPage();
+
+    await user.type(screen.getByLabelText("E-mail"), "ana@example.com");
+    await user.type(screen.getByLabelText("Senha"), "errada");
+    await user.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(await screen.findByText("E-mail ou senha inválidos.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reenviar e-mail de confirmação" })).not.toBeInTheDocument();
   });
 
   it("links to the register page", () => {
